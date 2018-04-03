@@ -50,10 +50,11 @@ def main():
 	""" The order in both np.arrays is the same as in the original files, which means that the label (output) \\
 	train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
 
-	# DATA PRE-PROCESSING
+	# DATA PRE-PROCESSING AND FEATURE SELECTION
 	# yet, empty
 
 	# TRIPLE CV (with random sampling without replacement) (similar to Wessels, 2005)
+	# Hyper-parameter selection can be integrated (e. g. k in kNN)
 	# (ALTERNATIVE: WITH REPLACEMENT, then other OUTER_FOLD AND INNER_FOLD are allowed)
 	# test if provided constants INNER_FOLD and OUTER_FOLD are allowed
 	if not (N_SAMPLES % OUTER_FOLD == 0 and N_SAMPLES / OUTER_FOLD % INNER_FOLD == 0):
