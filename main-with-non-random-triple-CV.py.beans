@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+This main script provides the backbone for the machine learning algorithm(s) and sets the framework for the validation-scheme.
+Recommended Python interpreter is of version >=3.5.
+Three-state classification into HER2+, TN or HR+.
+Evaluation metric should be accuracy.
+"""
+
+# IMPORT OF LIBRARIES
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import sklearn as skl
+import pandas as pd
+import math
+import sys
+
+# CONSTANTS
+START_TIME = time.time()
+BEANS_CONSTANT = 69
+N_SAMPLES = 100 # number of samples (patients)
+N_VARIABLES = 2834 # number of chromosomal locations
+OUTER_FOLD = 4 # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+INNER_FOLD = 5 # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 10-fold)
+
+
+# FUNCTION DEFINITIONS
+def main():
+	print('Script execution was initiated.')
+
+	# SETTING THE SEED FOR REPRODUCIBILITY
+	np.random.seed(0)
+
+	# IMPORT OF RAW DATA AS NP.ARRAY USING PANDAS
+	# import of train_clinical.txt, samples x 2 (sample name, label)
+	# Sample example (100 in total, sample name): 'Array.129'
+	# Subgroups (3 in total, label): 'HER2+', 'HR+' and 'Triple Neg'
+	train_clinical = pd.read_csv('../data/Train_clinical.txt', sep='\t').values
+	print('Data set "train_clinical" was loaded (%i rows and %i cols).' %(train_clinical.shape[0], train_clinical.shape[1]))
+	# import and transpose of train_call.txt, samples x variables
+	train_call = np.transpose(pd.read_csv('../data/Train_call.txt', sep='\t', usecols = range(4, 4+N_SAMPLES)).values.astype('float32'))
+	print('Data set "train_call" was loaded (%i rows and %i cols).' %(train_call.shape[0], train_call.shape[1]))
+	""" The order in both np.arrays is the same as in the original files, which means that the label (output)
+	train_clinical[a, 2] is the wanted prediction for the data (features) in train_call[a, :]"""
+
+	# TRIPLE CV
+	# test if provided constants INNER_FOLD and OUTER_FOLD are allowed
+	if not (N_SAMPLES % OUTER_FOLD == 0 and N_SAMPLES / OUTER_FOLD % INNER_FOLD == 0):
+		print('INNER_FOLD and OUTER_FOLD constants are not appropriate.')
+		print('Script execution is aborted after %.8s s.' %(time.time() - START_TIME))
+		sys.exit()
+	# run actual triple-CV using accuracy as the evaluation metric
+	accuracy_list_outer_loop = []
+	for outer_iterator in range(0, OUTER_FOLD):
+		# split data into the outer fold chunks
+		train_call_outer = train_call
+		train_clinical_outer = 
+		accuracy_list_inner_loop = []
+		for inner_iterator in range(0, INNER_FOLD):
+			
+		accuracy_list_outer_loop.append(accuracy_list_inner_loop)
+	accuracy_data = np.array(accuracy_list_outer_loop)
+
+	# SAVE MODEL AS *.pkl USING sklearn.joblib()
+
+# EXECUTION
+if __name__ == '__main__':
+	main()
+	print('Finished: The script was successfully executed in %.8s s.' %(time.time() - START_TIME))
+
+
+	# END OF FILE
