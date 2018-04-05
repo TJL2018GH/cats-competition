@@ -21,3 +21,11 @@ class BaseClassifier:
         :return: Prediction accuracy, as a float between 0 and 1
         """
         pass
+
+
+    def reset(self):
+        """
+        Resets the trained weights / parameters to initial state
+        :return:
+        """
+        pass
