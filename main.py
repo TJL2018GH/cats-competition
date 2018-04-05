@@ -20,9 +20,12 @@ import math
 import sys
 from termcolor import colored
 
-# CONSTANTS
+# CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
+from classifiers.nm_classifier import NearestMeanClassifier
+from classifiers.knn_classifier import KNearestNeighborsClassifier
 
+# CONSTANTS
 START_TIME = time.time()
 BEANS_CONSTANT = 69
 N_SAMPLES = 100  # number of samples (patients)
@@ -31,7 +34,9 @@ OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 
 INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 10-fold)
 
 CLASSIFIERS = {
-    'dnn': DeepNeuralClassifier
+    'dnn': DeepNeuralClassifier,
+    'nm': NearestMeanClassifier,
+    'knn': KNearestNeighborsClassifier
 }
 
 
@@ -71,11 +76,14 @@ def cross_validate(model, features, labels):
 
     # Select chunk_size amount of rows (indices) randomly from the data for every outer round
     for indices in [np.random.choice(len(features), chunk_size) for _ in range(OUTER_FOLD)]:
-        inner_train_accuracy, inner_val_accuracy = [], []
         for _ in range(INNER_FOLD):
             np.random.shuffle(indices)  # Reshuffle to get a different training/validation set every inner round
+
             train_features = np.asarray([features[index] for index in indices[val_size:]])
             train_labels = np.asarray([labels[index] for index in indices[val_size:]])
+
+            # TODO: check if train labels contains 3 unique values, otherwise reshuffle and repeat until True
+
             val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
 
             # Train the model on the current round's training set, and predict the current round's validation set

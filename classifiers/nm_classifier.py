@@ -1,31 +1,24 @@
-from keras import Sequential
-from keras.layers import Dense, Dropout
-from keras.utils import to_categorical
-from numpy import unique
-from sklearn.preprocessing import LabelBinarizer
+# IMPORTS
+
+# NOT YET IMPLEMENTED
+# consider different distance metrics: spec. correlation-distances (cosine, Mahalanobis)
+# Please announce if you implement it.
+# Ultima ratio: Ben provides himself for implementation
 
 from classifiers.base_classifier import BaseClassifier
 
 
-class DeepNeuralClassifier(BaseClassifier):
-    encoder = LabelBinarizer() # please annotate what this is doing (hypothesis: for to_categorical())
+class NearestMeanClassifier(BaseClassifier):
+    # encoder = LabelBinarizer()
 
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
-        # From Keras examples (https://keras.io/getting-started/sequential-model-guide/)
-        self.model = Sequential()
-        self.model.add(Dense(64, activation='relu', input_dim=feature_length))
-        self.model.add(Dropout(0.5))
-        self.model.add(Dense(64, activation='relu'))
-        self.model.add(Dropout(0.5))
-        self.model.add(Dense(num_classes, activation='softmax'))
+        ###
+        # BUILD YOUR MODEL
 
-        self.model.compile(loss='categorical_crossentropy',
-                      optimizer='sgd',
-                      metrics=['accuracy'])
-        self.model.summary()
+        ###
 
     def train(self, features, labels):
         """
@@ -35,10 +28,8 @@ class DeepNeuralClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        result = self.model.fit(features, labels, epochs=16, verbose=0)
-        return result.history['acc'][-1]
-
-        # make sure you save model using the same library as we used in machine learning price-predictor
+        # result =
+        return
 
     def predict(self, features, labels):
         """
@@ -49,8 +40,8 @@ class DeepNeuralClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        accuracy = self.model.evaluate(features, labels, verbose=0)[1]
-        return accuracy
+        # accuracy =
+        return
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)

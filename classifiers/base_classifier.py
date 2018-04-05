@@ -6,8 +6,8 @@ class BaseClassifier:
     def train(self, features, labels):
         """
         Using a set of features and labels, trains the classifier and returns the training accuracy.
-        :param features: An MxN matrix of features to use in prediction
-        :param labels: An N row list of labels to train to predict
+        :param features: An MxN matrix of features to use in prediction (M samples, N vars)
+        :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
         pass
@@ -16,8 +16,8 @@ class BaseClassifier:
         """
         Using a set of features and labels, predicts the labels from the features,
         and returns the accuracy of predicted vs actual labels.
-        :param features: An MxN matrix of features to use in prediction
-        :param labels: An N row list of labels to test prediction accuracy on
+        :param features: An MxN matrix of features to use in prediction (M samples, N vars)
+        :param labels: An M row list of labels to test prediction accuracy on
         :return: Prediction accuracy, as a float between 0 and 1
         """
         pass
