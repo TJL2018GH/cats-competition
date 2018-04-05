@@ -25,7 +25,10 @@ class DeepNeuralClassifier(BaseClassifier):
         self.model.compile(loss='categorical_crossentropy',
                       optimizer='sgd',
                       metrics=['accuracy'])
+
         self.model.summary()
+
+        self.initial_weights = self.model.get_weights()
 
     def train(self, features, labels):
         """
@@ -51,6 +54,15 @@ class DeepNeuralClassifier(BaseClassifier):
         labels = self.labels_to_categorical(labels)
         accuracy = self.model.evaluate(features, labels, verbose=0)[1]
         return accuracy
+
+
+    def reset(self):
+        """
+        Resets the trained weights / parameters to initial state
+        :return:
+        """
+        self.model.set_weights(self.initial_weights)
+        pass
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
