@@ -80,7 +80,7 @@ def cross_validate(model, features, labels):
 
             # Train the model on the current round's training set, and predict the current round's validation set
             train_accuracy.append(model.train(train_features, train_labels))
-            val_accuracy.append(model.predict(train_features, train_labels))
+            val_accuracy.append(model.predict(val_features, val_labels))
 
     return train_accuracy, np.mean(train_accuracy), val_accuracy, np.mean(val_accuracy)
 
