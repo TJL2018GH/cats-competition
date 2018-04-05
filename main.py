@@ -25,7 +25,7 @@ from classifiers.dnn_classifier import DeepNeuralClassifier
 from feature_selectors.all_selector import AllSelector
 
 START_TIME = time.time()
-BEANS_CONSTANT = 69
+BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
 N_VARIABLES = 2834  # number of chromosomal locations
 OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
@@ -119,6 +119,22 @@ def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_
     plt.show()
 
 
+def create_final_model(model_constructor, features, labels, selected_indices, num_labels):
+    model = model_constructor(len(selected_indices), num_labels)
+    val_len = N_SAMPLES / INNER_FOLD
+    val_indices = np.random.choice(len(features), int(val_len))
+    val_features = np.asarray([features[index] for index in val_indices])
+    val_labels = np.asarray([labels[index] for index in val_indices])
+    train_features = np.asarray([features[index] for index in range(0,len(features)) if index not in val_indices])
+    train_labels = np.asarray([labels[index] for index in range(0,len(labels)) if index not in val_indices])
+    train_accuracy = model.train(train_features[:, selected_indices], train_labels)
+    val_accuracy = model.predict(val_features[:, selected_indices], val_labels)
+
+    print('Final train accuracy: %f.\nFinal validation accuracy: %f' % (train_accuracy, val_accuracy))
+
+    return model
+
+
 def main():
     print('Script execution was initiated.')
 
@@ -161,8 +177,8 @@ def main():
     print('Triple-CV was finished.')
     plot_accuracy(model_constructor, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean)
 
-    # TODO: Train one last time on entire dataset
-
+    # Train one last time on entire dataset
+    model = create_final_model(model_constructor, features, labels, selected_indices, num_unique_labels)
 
     # TODO: Save model as *.pkl USING sklearn.joblib() ?
 
