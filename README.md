@@ -14,5 +14,5 @@ Constant k is a hyper-parameter.
 
 The observed values in our dataset for each variable are discrete, being in the interval {-2, -1, 0, 1, 2} (please verify). Therefore, the data is suitable for comparison using 'hamming' (particularly, with a mean hamming-centroid per class), 'canberra' and 'braycurtis' distance.
 
-Regularization:
-Included a regularization term in the loss function to prevent overfitting in our highly undetermined problem (n_vars >> n_samples).
+Regularization (keep the classifier 'simple', and thereby prevents overfitting)
+Included a regularization term in the loss function to prevent overfitting in our highly undetermined problem (n_vars >> n_samples). Examples: L0-norm (addition of number of non-zero weights to loss function), L1-norm (LASSO with LS-loss), L2-norm (Tikhonov-regularizer, ridge regression), elastic net (combination of L1 and L2).
