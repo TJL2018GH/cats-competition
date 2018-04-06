@@ -1,23 +1,21 @@
-# IMPORTS
-
-# NOT YET IMPLEMENTED
+# K-Nearest-Neighbor Classifier
 # consider different distance metrics: spec. correlation-distances (cosine, Mahalanobis)
-# Please announce if you implement it.
-# Ultima ratio: Ben provides himself for implementation
 
+# IMPORTS
 from classifiers.base_classifier import BaseClassifier
-
+from sklearn import KNeighborsClassifier
 
 class KNearestNeighborsClassifier(BaseClassifier):
-    # encoder = LabelBinarizer()
-
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
         ###
         # BUILD YOUR MODEL
-
+	# weights='distance' sets importance of points upon classification by distance
+	# default: weights='uniform'
+	K = 5 # default
+	self.model = KNeighborsClassifier(metric='', weights='distance', n_neighbors=K)
         ###
 
     def train(self, features, labels):

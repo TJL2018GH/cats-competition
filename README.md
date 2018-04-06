@@ -12,5 +12,7 @@ The methods shall be tested with different distance metrics (e. g. cosine distan
 
 Constant k is a hyper-parameter.
 
+The observed values in our dataset for each variable are discrete, being in the interval {-2, -1, 0, 1, 2} (please verify). Therefore, the data is suitable for comparison using 'hamming' (particularly, with a mean hamming-centroid per class), 'canberra' and 'braycurtis' distance.
+
 
 

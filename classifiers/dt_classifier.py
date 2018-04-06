@@ -5,6 +5,7 @@
 # Ultima ratio: Ben provides himself for implementation
 
 from classifiers.base_classifier import BaseClassifier
+from sklearn import tree
 
 
 class KNearestNeighborsClassifier(BaseClassifier):
@@ -16,7 +17,8 @@ class KNearestNeighborsClassifier(BaseClassifier):
 
         ###
         # BUILD YOUR MODEL
-
+	self.model = tree.DecisionTreeClassifier(criterion='gini', random_state=0)
+	
         ###
 
     def train(self, features, labels):
@@ -27,8 +29,17 @@ class KNearestNeighborsClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        # result =
-        return
+	self.model.fit(features, labels)
+	train_accuracy = score(self.model.predict(features), labels)
+	
+	# save depiction of the tree model
+	"""
+	dot -Tpng dt_classifier.dot -o dt_classifier.png
+	"""
+	tree.export_graphviz(self.model, out_file='dt_classifier.dot')
+
+	# get parameters by get_params()
+        return train_accuracy
 
     def predict(self, features, labels):
         """
@@ -39,8 +50,9 @@ class KNearestNeighborsClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        # accuracy =
-        return
+	self.model.predict(features)
+	test_accuracy = score(self.model.predict(features), labels)
+        return test_accuracy
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
