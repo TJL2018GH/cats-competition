@@ -4,11 +4,13 @@ Data is high-dimensional (100 samples, >2.8k variables), therefore sparse classi
 
 ## To-Do
 Implement sklearn.pipeline.Pipeline to combine feature selection and training of the classifier, as exemplified in the snippet below, where LinearSVS with L1-norm regularization and removal of low scoring features is used to select features, and subsequently a random forest classifiers is trained on the reduced features space.
+
 clf = Pipeline([
   ('feature_selection', SelectFromModel(LinearSVC(penalty="l1"))),
   ('classification', RandomForestClassifier())
 ])
 clf.fit(X, y)
+
 
 ## Think space (general idea communicated in-vivo group discussion)
 The following ideas can be implemented with the sklearn pipeline approach.
@@ -66,8 +68,12 @@ scikit-learn version 0.19.1
 sklearn 0.0
 tensorflow 1.6.0
 
+We recommend to create and activate a conda environment, in which all above listed package versions can be installed using 'conda install --name <EnvironmentName> --file conda_requirements.txt' and 'pip install -r pip_requirements.txt' for non-conda packages.
+
+## License
+This code is available under the GNU General Public License v3.0. We tried our best, but cannot guarantee correctness of the code.
+
 ## Authors
-This code is available under a GNU public license. We tried our best, but cannot guarantee correctness of the code.
 T Clement, M Best, N Ruffino & B Wölfl
 
 
