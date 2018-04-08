@@ -48,8 +48,6 @@ Log2-fold changes (values): '-1': Loss, '0': No Change, '1': Duplication, '2': T
 *Approaches in Literature*
 Problems of the methods: filtering out of useful information by feature selection, neglecting inherent structure (correlation, see: start and end position of duplication or deletion) of aCGH data
 
-Rapaport et al., 2008:
+Rapaport et al., 2008: read paper
 Chin et al., 2006: feature selection (small number of genes) & kNN; two-state: estrogen+ vs. estrogen-; (acc.=76%, in balanced set)
 Jones et al., 2004: feature selection (reduction to gain/loss at chromosome arm resolution) & nearest centroid classification; muli-state: breast tumor grade; (acc. larger than for Chin et al., 2006)
-
-
