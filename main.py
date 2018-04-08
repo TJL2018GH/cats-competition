@@ -24,7 +24,9 @@ from termcolor import colored
 from classifiers.dnn_classifier import DeepNeuralClassifier
 from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
+from classifiers.naivebayses import NaivesBayes
 from feature_selectors.all_selector import AllSelector
+
 
 # CONSTANTS
 START_TIME = time.time()
@@ -37,7 +39,8 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
     'nm': NearestMeanClassifier,
-    'knn': KNearestNeighborsClassifier
+    'knn': KNearestNeighborsClassifier,
+    'nvb': NaivesBayes
 }
 
 SELECTORS = {
