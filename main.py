@@ -24,7 +24,7 @@ from termcolor import colored
 from classifiers.dnn_classifier import DeepNeuralClassifier
 # from classifiers.nm_classifier import NearestMeanClassifier
 # from classifiers.knn_classifier import KNearestNeighborsClassifier
-from classifiers.naivebayses import NaivesBayes
+from classifiers.nvb_classifier import NaivesBayes
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.rand_selector import RandomSelector
 
