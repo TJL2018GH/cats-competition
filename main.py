@@ -46,7 +46,8 @@ CLASSIFIERS = {
 }
 
 SELECTORS = {
-    'all': AllSelector
+    'all': AllSelector,
+    'rand': RandomSelector
 }
 
 
@@ -163,7 +164,7 @@ def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_
 
 def create_final_model(model_constructor, features, labels, selected_indices, num_labels):
     model = model_constructor(len(selected_indices), num_labels)
-    train_accuracy = model.train(features, labels)
+    train_accuracy = model.train(features[:, selected_indices], labels)
 
     print('Final train accuracy: %f.' % train_accuracy)
 
@@ -213,6 +214,7 @@ def main():
     plot_accuracy(model_constructor, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean)
 
     # Show model accuracy on entire dataset
+    print('Showing accuracy of model on entire dataset')
     final_train_acc, final_train_mean, final_val_acc, final_val_mean = \
         calc_final_accuracy(features[:, selected_indices], labels, model_constructor(len(selected_indices), num_unique_labels))
     plot_accuracy(model_constructor, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean)
