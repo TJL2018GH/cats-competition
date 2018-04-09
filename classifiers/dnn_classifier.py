@@ -26,8 +26,6 @@ class DeepNeuralClassifier(BaseClassifier):
                       optimizer='sgd',
                       metrics=['accuracy'])
 
-        self.model.summary()
-
         self.initial_weights = self.model.get_weights()
 
     def train(self, features, labels):
