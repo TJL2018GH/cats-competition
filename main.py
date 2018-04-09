@@ -40,8 +40,8 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 
 CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
-    'nm': NearestMeanClassifier,
-    'knn': KNearestNeighborsClassifier,
+    # 'nm': NearestMeanClassifier,
+    # 'knn': KNearestNeighborsClassifier,
     'nvb': NaivesBayes
 }
 
