@@ -7,3 +7,4 @@ class BaseSelector:
         :return: list of indices of interesting features
         """
         pass
+

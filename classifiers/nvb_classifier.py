@@ -1,6 +1,4 @@
 from sklearn.naive_bayes import GaussianNB
-from sklearn.feature_selection import RFE
-from keras.utils import to_categorical
 from numpy import unique
 from classifiers.base_classifier import BaseClassifier
 
