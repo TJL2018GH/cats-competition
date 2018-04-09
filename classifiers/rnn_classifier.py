@@ -1,18 +1,18 @@
-# Nearest Centroid Classifier
+# Radius-Nearest-Neighbor Classifier
+# consider different distance metrics: spec. correlation-distances (cosine, Mahalanobis)
 
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
-from sklearn import NearestCentroid
+from sklearn import RadiusNeighborsClassifier
 
-class NearestMeanClassifier(BaseClassifier):
+class RadiusNearestNeighborsClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
         ###
         # BUILD YOUR MODEL
-	# shrink_threshold = True for Nearest Shrunken Centroid Classifier
-	self.model = NearestCentroid(metric='mahalanobis')
+	self.model = RadiusNeighborsClassifier(weights='distance', metric='')
         ###
 
     def train(self, features, labels):

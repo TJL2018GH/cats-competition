@@ -1,18 +1,18 @@
-# Nearest Centroid Classifier
+# Support Vector Machine with Linear Kernel
 
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
-from sklearn import NearestCentroid
+from sklearn import svm
 
-class NearestMeanClassifier(BaseClassifier):
+class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
         ###
         # BUILD YOUR MODEL
-	# shrink_threshold = True for Nearest Shrunken Centroid Classifier
-	self.model = NearestCentroid(metric='mahalanobis')
+	# SVC (one-against-one approach, Knerr et al., 1990)
+	self.model = svm.SVC(kernel='linear')
         ###
 
     def train(self, features, labels):
@@ -23,8 +23,9 @@ class NearestMeanClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        # result =
-        return
+	self.model.fit(features, labels)
+	train_accuracy = score(self.model.predict(features), labels)
+        return train_accuracy
 
     def predict(self, features, labels):
         """
@@ -35,8 +36,9 @@ class NearestMeanClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        # accuracy =
-        return
+	self.model.predict(features)
+	test_accuracy = score(self.model.predict(features), labels)
+        return test_accuracy
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
