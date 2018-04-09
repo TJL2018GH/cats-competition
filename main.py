@@ -217,7 +217,7 @@ def main():
     print('Showing accuracy of model on entire dataset')
     final_train_acc, final_train_mean, final_val_acc, final_val_mean = \
         calc_final_accuracy(features[:, selected_indices], labels, model_constructor(len(selected_indices), num_unique_labels))
-    plot_accuracy(model_constructor, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean)
+    plot_accuracy(model_constructor, final_train_acc, final_train_mean, final_val_acc, final_val_mean)
 
     # Train one last time on entire dataset
     model = create_final_model(model_constructor, features, labels, selected_indices, num_unique_labels)
