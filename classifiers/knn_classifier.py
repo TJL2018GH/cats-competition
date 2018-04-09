@@ -5,6 +5,7 @@
 from classifiers.base_classifier import BaseClassifier
 from sklearn import KNeighborsClassifier
 
+
 class KNearestNeighborsClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
@@ -12,10 +13,10 @@ class KNearestNeighborsClassifier(BaseClassifier):
 
         ###
         # BUILD YOUR MODEL
-	# weights='distance' sets importance of points upon classification by distance
-	# default: weights='uniform'
-	K = 5 # default
-	self.model = KNeighborsClassifier(metric='', weights='distance', n_neighbors=K)
+        # weights='distance' sets importance of points upon classification by distance
+        # default: weights='uniform'
+        K = 5  # default
+        self.model = KNeighborsClassifier(metric='', weights='distance', n_neighbors=K)
         ###
 
     def train(self, features, labels):

@@ -4,6 +4,7 @@
 from classifiers.base_classifier import BaseClassifier
 from sklearn import NearestCentroid
 
+
 class NearestMeanClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
@@ -11,8 +12,8 @@ class NearestMeanClassifier(BaseClassifier):
 
         ###
         # BUILD YOUR MODEL
-	# shrink_threshold = True for Nearest Shrunken Centroid Classifier
-	self.model = NearestCentroid(metric='mahalanobis')
+        # shrink_threshold = True for Nearest Shrunken Centroid Classifier
+        self.model = NearestCentroid(metric='mahalanobis')
         ###
 
     def train(self, features, labels):

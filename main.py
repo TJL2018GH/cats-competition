@@ -22,13 +22,15 @@ from termcolor import colored
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
-from classifiers.nm_classifier import NearestMeanClassifier
-from classifiers.knn_classifier import KNearestNeighborsClassifier
+# from classifiers.nm_classifier import NearestMeanClassifier
+# from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.naivebayses import NaivesBayes
 from feature_selectors.all_selector import AllSelector
+from feature_selectors.rand_selector import RandomSelector
 
 
 # CONSTANTS
+
 START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
