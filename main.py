@@ -25,6 +25,8 @@ from classifiers.dnn_classifier import DeepNeuralClassifier
 # from classifiers.nm_classifier import NearestMeanClassifier
 # from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaivesBayes
+
+from classifiers.logicregressio_classifier import LogicRegression
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.nicoli_selector import RFESelector
 from feature_selectors.rand_selector import RandomSelector
@@ -43,7 +45,8 @@ CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
     # 'nm': NearestMeanClassifier,
     # 'knn': KNearestNeighborsClassifier,
-    'nvb': NaivesBayes
+    'nvb': NaivesBayes,
+    'lgr': LogicRegression
 }
 
 SELECTORS = {
