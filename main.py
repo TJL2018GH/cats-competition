@@ -28,7 +28,7 @@ from classifiers.nvb_classifier import NaivesBayes
 
 from classifiers.logicregressio_classifier import LogicRegression
 from feature_selectors.all_selector import AllSelector
-from feature_selectors.nicoli_selector import RFESelector
+from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.rand_selector import RandomSelector
 
 
@@ -101,10 +101,8 @@ def cross_validate(selector, model_constructor, features, labels, num_labels):
             # TODO: check if train labels contains 3 unique values, otherwise reshuffle and repeat until True
 
             val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
-            selected_indices = selector.select_features(train_features, train_labels)
 
-            #  nicoli selector model work with
-            #  selected_indices = selector.select_features(train_features,train_labels,num_labels,1)
+            selected_indices = selector.select_features(train_features, train_labels)
 
             # Train the model on the current round's training set, and predict the current round's validation set
             model = model_constructor(len(selected_indices), num_labels)

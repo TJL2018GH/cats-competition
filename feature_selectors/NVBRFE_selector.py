@@ -10,17 +10,19 @@ from feature_selectors.base_selector import BaseSelector
 
 class RFESelector(BaseSelector):
 
-    def select_features(self,data,labels,class_num,n_features):
+    def select_features(self,data,labels):
         """
         Selects interesting features (column indices) from given data matrix.
         :param data: MxN matrix containing features as columns, and samples as rows
         :return: list of indices of interesting features
         """
+        self.class_num = 3
+        self.sel_features = 1
         step = 1
         index_features = np.array(range(len(data[0])))
         model = GaussianNB()
         labels = self.labels_to_categorical(labels)
-        index_features = self.eliminate(model,data,labels,n_features,class_num,step,index_features,0)
+        index_features = self.eliminate(model,data,labels,self.sel_features,self.class_num,step,index_features,0)
 
         return index_features
 
