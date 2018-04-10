@@ -1,9 +1,10 @@
-from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
 from numpy import unique
 from classifiers.base_classifier import BaseClassifier
+from sklearn.feature_selection import RFE
 
 
-class NaivesBayes(BaseClassifier):
+class LogicRegression(BaseClassifier):
 
 	def __init__(self,feature_length,num_classes,x=10):
 
@@ -20,7 +21,8 @@ class NaivesBayes(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
-		self.model = GaussianNB()
+		model = LogisticRegression()
+		self.model = RFE(model,1)
 		labels = self.labels_to_categorical(labels)
 		self.model.fit(features,labels)
 		accuracy = self.model.score(features,labels)

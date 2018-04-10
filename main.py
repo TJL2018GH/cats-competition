@@ -25,6 +25,8 @@ from classifiers.dnn_classifier import DeepNeuralClassifier
 # from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaivesBayes
+
+from classifiers.logicregressio_classifier import LogicRegression
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.nicoli_selector import RFESelector
 from feature_selectors.rand_selector import RandomSelector
@@ -42,14 +44,14 @@ CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
     # 'nm': NearestMeanClassifier,
     'knn': KNearestNeighborsClassifier,
-    'nvb': NaivesBayes
+    'nvb': NaivesBayes,
+    'lgr': LogicRegression
 }
 
 SELECTORS = {
     'all': AllSelector,
     'rand': RandomSelector,
     'rfe': RFESelector
-
 }
 
 
@@ -99,7 +101,7 @@ def cross_validate(selector, model_constructor, features, labels, num_labels):
             # TODO: check if train labels contains 3 unique values, otherwise reshuffle and repeat until True
 
             val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
-            selected_indices = selector.select_features(train_features,train_labels)
+            selected_indices = selector.select_features(train_features, train_labels)
 
             #  nicoli selector model work with
             #  selected_indices = selector.select_features(train_features,train_labels,num_labels,1)
