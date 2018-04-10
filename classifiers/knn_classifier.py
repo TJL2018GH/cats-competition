@@ -5,7 +5,7 @@
 from classifiers.base_classifier import BaseClassifier
 from numpy import unique
 from sklearn.neighbors import KNeighborsClassifier
-from keras.utils import to_categorical
+
 
 class KNearestNeighborsClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
@@ -43,4 +43,4 @@ class KNearestNeighborsClassifier(BaseClassifier):
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
-        return to_categorical(IDs, num_classes=self.num_classes)
+        return IDs

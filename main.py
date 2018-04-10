@@ -22,7 +22,7 @@ from termcolor import colored
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
-# from classifiers.nm_classifier import NearestMeanClassifier
+from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaivesBayes
 
@@ -42,7 +42,7 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 
 CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
-    # 'nm': NearestMeanClassifier,
+    'nm': NearestMeanClassifier,
     'knn': KNearestNeighborsClassifier,
     'nvb': NaivesBayes,
     'lgr': LogicRegression
@@ -201,7 +201,6 @@ def main():
         print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
         sys.exit()
 
-    print (sys.argv[1])
     if len(sys.argv) != 3 or sys.argv[1] not in SELECTORS.keys() or sys.argv[2] not in CLASSIFIERS.keys():
         sys.exit('Usage: python main.py [%s] [%s]' % ('|'.join(SELECTORS.keys()), '|'.join(CLASSIFIERS.keys())))
 
