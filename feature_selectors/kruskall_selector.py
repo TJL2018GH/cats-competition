@@ -39,6 +39,6 @@ class KruskallSelector(BaseSelector):
                 p_values[index]=1
 
         # Multiple testing correction provide no significant variables, we'll stick with this for now
-        significant_p_value_indices = np.asarray(np.where(np.array(p_values) < 0.05))[0]
+        significant_p_value_indices = np.asarray(np.where(np.array(p_values) < 0.03))[0]
 
         return significant_p_value_indices
