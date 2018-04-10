@@ -25,15 +25,16 @@ from classifiers.dnn_classifier import DeepNeuralClassifier
 from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaivesBayes
-
 from classifiers.logicregressio_classifier import LogicRegression
+from classifiers.dt_classifier import DecisionTreeClassifier
+
+# (FEATURE) SELECTORS
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.rand_selector import RandomSelector
 
 
 # CONSTANTS
-
 START_TIME = time.time()
 N_SAMPLES = 100  # number of samples (patients)
 N_VARIABLES = 2834  # number of chromosomal locations
@@ -45,7 +46,8 @@ CLASSIFIERS = {
     'nm': NearestMeanClassifier,
     'knn': KNearestNeighborsClassifier,
     'nvb': NaivesBayes,
-    'lgr': LogicRegression
+    'lgr': LogicRegression,
+    'dt': DecisionTreeClassifier
 }
 
 SELECTORS = {
