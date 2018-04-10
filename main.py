@@ -23,7 +23,7 @@ from termcolor import colored
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
 # from classifiers.nm_classifier import NearestMeanClassifier
-# from classifiers.knn_classifier import KNearestNeighborsClassifier
+from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaivesBayes
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.nicoli_selector import RFESelector
@@ -33,7 +33,6 @@ from feature_selectors.rand_selector import RandomSelector
 # CONSTANTS
 
 START_TIME = time.time()
-BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
 N_VARIABLES = 2834  # number of chromosomal locations
 OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
@@ -42,7 +41,7 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
     # 'nm': NearestMeanClassifier,
-    # 'knn': KNearestNeighborsClassifier,
+    'knn': KNearestNeighborsClassifier,
     'nvb': NaivesBayes
 }
 
@@ -100,10 +99,10 @@ def cross_validate(selector, model_constructor, features, labels, num_labels):
             # TODO: check if train labels contains 3 unique values, otherwise reshuffle and repeat until True
 
             val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
-            #selected_indices = selector.select_features(train_features,train_labels)
+            selected_indices = selector.select_features(train_features,train_labels)
 
-            #nicoli selector model work with
-            selected_indices = selector.select_features(train_features,train_labels,num_labels,1)
+            #  nicoli selector model work with
+            #  selected_indices = selector.select_features(train_features,train_labels,num_labels,1)
 
             # Train the model on the current round's training set, and predict the current round's validation set
             model = model_constructor(len(selected_indices), num_labels)
@@ -202,6 +201,7 @@ def main():
         print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
         sys.exit()
 
+    print (sys.argv[1])
     if len(sys.argv) != 3 or sys.argv[1] not in SELECTORS.keys() or sys.argv[2] not in CLASSIFIERS.keys():
         sys.exit('Usage: python main.py [%s] [%s]' % ('|'.join(SELECTORS.keys()), '|'.join(CLASSIFIERS.keys())))
 
