@@ -28,7 +28,10 @@ from classifiers.nvb_classifier import NaivesBayes
 from classifiers.logicregressio_classifier import LogicRegression
 from classifiers.dt_classifier import DecisionTreeClassifier
 from classifiers.rf_classifier import RForestClassfier # an ensemble of DecisionTreeClassifiers
-from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier
+from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier  # one vs. rest
+from classifiers.svmlin_classifier import SupportVectorMachineLinearKernelClassifier  # one vs. one
+from classifiers.svmpol_classifier import SupportVectorMachinePolynomialKernelClassifier
+from classifiers.svmrbf_classifier import SupportVectorMachineRbfKernelClassifier
 
 # (FEATURE) SELECTORS
 from feature_selectors.all_selector import AllSelector
@@ -51,7 +54,10 @@ CLASSIFIERS = {
     'lgr': LogicRegression,
     'dt': DecisionTreeClassifier,
     'rf': RForestClassfier,
-    'linsvc': SupportVectorMachineLinearKernelOneVsRestClassifier
+    'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
+    'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
+    'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
+    'svm_rbf': SupportVectorMachineRbfKernelClassifier
 }
 
 SELECTORS = {
