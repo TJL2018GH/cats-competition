@@ -40,7 +40,8 @@ class KruskallSelector(BaseSelector):
 
         # Multiple testing correction provide no significant variables, we'll stick with this for now
         #significant_p_value_indices = np.asarray(np.where(np.array(p_values) < 0.03))[0]
+
+        # For now just selects best feature
         significant_p_value_indices = np.asarray(np.where(p_values == p_values.min())[0])
-        print(significant_p_value_indices)
 
         return significant_p_value_indices

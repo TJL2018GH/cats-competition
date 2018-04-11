@@ -57,5 +57,6 @@ class MannWhitneySelector(BaseSelector):
             p_values[2, index] = mannwhitneyu_test(trip_neg_samples[:, index], hr_samples[:, index])
 
         # sorted_indices = sorted(list(set(np.asarray(np.where(p_values < 0.005)[1]))))
+        # For now just selects best feature
         sorted_indices = np.asarray(np.where(p_values == p_values.min())[1])
         return sorted_indices

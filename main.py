@@ -37,7 +37,8 @@ from classifiers.svmrbf_classifier import SupportVectorMachineRbfKernelClassifie
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.rand_selector import RandomSelector
-
+from feature_selectors.mann_whitney import MannWhitneySelector
+from feature_selectors.kruskall_selector import KruskallSelector
 
 # CONSTANTS
 START_TIME = time.time()
@@ -63,7 +64,9 @@ CLASSIFIERS = {
 SELECTORS = {
     'all': AllSelector,
     'rand': RandomSelector,
-    'rfe': RFESelector
+    'rfe': RFESelector,
+    'mann': MannWhitneySelector,
+    'kru': KruskallSelector
 }
 
 
