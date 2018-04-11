@@ -36,16 +36,17 @@ BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
 N_VARIABLES = 2834  # number of chromosomal locations
 OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+MIDDLE_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 10-fold)
 INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 10-fold)
 
-CLASSIFIERS = {
+classifiers = {
     'dnn': DeepNeuralClassifier,
     # 'nm': NearestMeanClassifier,
     # 'knn': KNearestNeighborsClassifier,
     'nvb': NaivesBayes
 }
 
-SELECTORS = {
+selectors = {
     'all': AllSelector,
     'rand': RandomSelector
 }
@@ -71,74 +72,6 @@ def get_data():
     print('Data set "train_call" was loaded (%i rows and %i cols).' % (train_call.shape[0], train_call.shape[1]))
 
     return train_call, train_clinical
-
-
-def cross_validate(selector, model_constructor, features, labels, num_labels):
-    """
-    Performs triple cross-validation, using accuracy as evaluation metric
-    :param model:
-    :param features: An MxN matrix of features to use in prediction
-    :param labels: An N row list of labels to predict
-    :return: training_accuracy, training_accuracy_mean, validation_accuracy, validation_accuracy_mean
-    """
-    best_accuracy, best_indices = 0, []
-    train_accuracy, val_accuracy = [], []
-    chunk_size = int(N_SAMPLES / OUTER_FOLD)  # number of samples provided after first split
-    val_size = int(N_SAMPLES / OUTER_FOLD / INNER_FOLD)  # number of samples provided after second split
-
-    # Select chunk_size amount of rows (indices) randomly from the data for every outer round
-    for indices in [np.random.choice(len(features), chunk_size) for _ in range(OUTER_FOLD)]:
-        for _ in range(INNER_FOLD):
-            np.random.shuffle(indices)  # Reshuffle to get a different training/validation set every inner round
-
-            train_features = np.asarray([features[index] for index in indices[val_size:]])
-            train_labels = np.asarray([labels[index] for index in indices[val_size:]])
-
-            # TODO: check if train labels contains 3 unique values, otherwise reshuffle and repeat until True
-
-            val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
-            selected_indices = selector.select_features(train_features)
-
-            # Train the model on the current round's training set, and predict the current round's validation set
-            model = model_constructor(len(selected_indices), num_labels)
-            train_accuracy.append(model.train(train_features[:, selected_indices], train_labels))
-            val_accuracy.append(model.predict(val_features[:, selected_indices], val_labels))
-
-            if val_accuracy[-1] > best_accuracy:
-                best_indices = selected_indices
-
-    return train_accuracy, np.mean(train_accuracy), val_accuracy, np.mean(val_accuracy), best_indices
-
-
-def calc_final_accuracy(features, labels, model):
-    """
-    Calculates the cross validated accuracy of a hyperparametrised model, based on the entire dataset.
-    :param features:
-    :param labels:
-    :param model:
-    :return: training_accuracy, training_accuracy_mean, validation_accuracy, validation_accuracy_mean
-    """
-    best_accuracy = 0
-    train_accuracy, val_accuracy = [], []
-    chunk_size = int(N_SAMPLES / OUTER_FOLD)  # number of samples provided after first split
-    val_size = int(N_SAMPLES / OUTER_FOLD / INNER_FOLD)  # number of samples provided after second split
-
-    # Select chunk_size amount of rows (indices) randomly from the data for every outer round
-    for indices in [np.random.choice(len(features), chunk_size) for _ in range(OUTER_FOLD)]:
-        for _ in range(INNER_FOLD):
-            np.random.shuffle(indices)  # Reshuffle to get a different training/validation set every inner round
-
-            train_features = np.asarray([features[index] for index in indices[val_size:]])
-            train_labels = np.asarray([labels[index] for index in indices[val_size:]])
-            val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
-
-            # Train the model on the current round's training set, and predict the current round's validation set
-            train_accuracy.append(model.train(train_features, train_labels))
-            val_accuracy.append(model.predict(val_features, val_labels))
-
-            model.reset()
-
-    return train_accuracy, np.mean(train_accuracy), val_accuracy, np.mean(val_accuracy)
 
 
 def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean):
@@ -170,6 +103,28 @@ def create_final_model(model_constructor, features, labels, selected_indices, nu
 
     return model
 
+def slice_data(features, labels, folds, current_fold):
+    train_indices = range(0, current_fold * len(features)) + range((current_fold + 1) * len(features), len(features))
+    val_indices = range(current_fold * len(features), (current_fold + 1) * len(features))
+    train = {'features': features[train_indices], 'labels': labels[train_indices]}
+    val = {'features': features[val_indices], 'labels': labels[val_indices]}
+    return train, val
+
+def triple_cross_validate(features, labels, num_labels):
+    outer_fold, middle_fold, inner_fold = OUTER_FOLD, len(selectors), len(classifiers)
+
+    for outer_i in range(0, outer_fold):
+        outer_train, outer_val = slice_data(features, labels, outer_fold, outer_i)
+
+        for middle_i in range(0, middle_fold):
+            middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold, middle_i)
+            selector = selectors[middle_i]()
+            selected_indices = selector.select_features(middle_train['features'])
+
+            for inner_i in range(0, inner_fold):
+                inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold, inner_i)
+                classifier = classifiers[inner_i](len(selected_indices), num_labels)
+                accuracy = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
 
 def main():
     print('Script execution was initiated.')
@@ -196,13 +151,13 @@ def main():
         print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
         sys.exit()
 
-    if len(sys.argv) != 3 or sys.argv[1] not in SELECTORS.keys() or sys.argv[2] not in CLASSIFIERS.keys():
-        sys.exit('Usage: python main.py [%s] [%s]' % ('|'.join(SELECTORS.keys()), '|'.join(CLASSIFIERS.keys())))
+    if len(sys.argv) != 3 or sys.argv[1] not in selectors.keys() or sys.argv[2] not in classifiers.keys():
+        sys.exit('Usage: python main.py [%s] [%s]' % ('|'.join(selectors.keys()), '|'.join(classifiers.keys())))
 
     # Select model to run, based on command line parameter
     feature_length, num_unique_labels = features.shape[1], len(set(labels))
-    selector = SELECTORS[sys.argv[1]]()
-    model_constructor = CLASSIFIERS[sys.argv[2]]
+    selector = selectors[sys.argv[1]]()
+    model_constructor = classifiers[sys.argv[2]]
 
     # give standard output
     print('Triple cross-validation with %i-fold and subsequent %i-fold split is initiated.' % (OUTER_FOLD, INNER_FOLD))
