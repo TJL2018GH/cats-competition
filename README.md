@@ -11,6 +11,14 @@ clf = Pipeline([
 ])
 clf.fit(X, y)
 
+Beans will keep in mind:
+- PCA
+- PCDA
+- BeanS: Permuation test with BH-correction, 
+- t-test
+- Manifold
+- PLSR, PLSDA
+- Establish data set with shuffled columns (destruction of correlation structure)
 
 ## Think space (general idea communicated in-vivo group discussion)
 The following ideas can be implemented with the sklearn pipeline approach.
