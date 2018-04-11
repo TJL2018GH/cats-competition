@@ -3,17 +3,16 @@
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
 from sklearn import svm
+from numpy import unique
 
 class SupportVectorMachinePolynomialKernelClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
-        ###
-        # BUILD YOUR MODEL
-	# SVC (one-against-one approach, Knerr et al., 1990)
-	self.model = svm.SVC(kernel='polynomial')
-        ###
+        # model build
+        # degree = 3 is default
+        self.model = svm.SVC(kernel='poly', degree=3)
 
     def train(self, features, labels):
         """
@@ -23,9 +22,9 @@ class SupportVectorMachinePolynomialKernelClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-	self.model.fit(features, labels)
-	train_accuracy = score(self.model.predict(features), labels)
-        return train_accuracy
+        self.model.fit(features, labels)
+        accuracy = self.model.score(features, labels)
+        return accuracy
 
     def predict(self, features, labels):
         """
@@ -36,10 +35,9 @@ class SupportVectorMachinePolynomialKernelClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-	self.model.predict(features)
-	test_accuracy = score(self.model.predict(features), labels)
-        return test_accuracy
+        accuracy = self.model.score(features, labels)
+        return accuracy
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
-        return to_categorical(IDs, num_classes=self.num_classes)
+        return IDs

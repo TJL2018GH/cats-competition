@@ -4,7 +4,7 @@ from feature_selectors.base_selector import BaseSelector
 
 
 class RandomSelector(BaseSelector):
-    def select_features(self, data):
+    def select_features(self, data,labels):
         """
         Selects interesting features (column indices) from given data matrix.
         :param data: MxN matrix containing features as columns, and samples as rows
