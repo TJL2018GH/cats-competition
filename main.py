@@ -27,6 +27,8 @@ from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaivesBayes
 from classifiers.logicregressio_classifier import LogicRegression
 from classifiers.dt_classifier import DecisionTreeClassifier
+from classifiers.rf_classifier import RForestClassfier # an ensemble of DecisionTreeClassifiers
+from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier
 
 # (FEATURE) SELECTORS
 from feature_selectors.all_selector import AllSelector
@@ -47,7 +49,9 @@ CLASSIFIERS = {
     'knn': KNearestNeighborsClassifier,
     'nvb': NaivesBayes,
     'lgr': LogicRegression,
-    'dt': DecisionTreeClassifier
+    'dt': DecisionTreeClassifier,
+    'rf': RForestClassfier,
+    'linsvc': SupportVectorMachineLinearKernelOneVsRestClassifier
 }
 
 SELECTORS = {
