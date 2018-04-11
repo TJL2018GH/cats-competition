@@ -1,21 +1,18 @@
-# Support Vector Machine with Linear Kernel
+# Support Vector Machine with Linear Kernel (one-against-one approach, Knerr et al., 1990)
+# hand-crafted by Beans
 
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
-from sklearn import svm
-from keras.utils import to_categorical
 from numpy import unique
+from sklearn import svm
 
 class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
-        ###
-        # BUILD YOUR MODEL
-	    # SVC (one-against-one approach, Knerr et al., 1990)
+        # model build
         self.model = svm.SVC(kernel='linear')
-        ###
 
     def train(self, features, labels):
         """
@@ -26,8 +23,8 @@ class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
         """
         labels = self.labels_to_categorical(labels)
         self.model.fit(features, labels)
-        train_accuracy = score(self.model.predict(features), labels)
-        return train_accuracy
+        accuracy = self.model.score(features, labels)
+        return accuracy
 
     def predict(self, features, labels):
         """
@@ -38,10 +35,9 @@ class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        self.model.predict(features)
-        test_accuracy = score(self.model.predict(features), labels)
-        return test_accuracy
+        accuracy = self.model.score(features, labels)
+        return accuracy
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
-        return to_categorical(IDs, num_classes=self.num_classes)
+        return IDs

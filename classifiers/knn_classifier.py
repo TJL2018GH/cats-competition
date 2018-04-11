@@ -1,11 +1,10 @@
-# K-Nearest-Neighbor Classifier
-# consider different distance metrics: spec. correlation-distances (cosine, Mahalanobis)
+# K-Nearest-Neighbors Classifier
+# hand-crafted by Beans
 
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from keras.utils import to_categorical
 from numpy import unique
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class KNearestNeighborsClassifier(BaseClassifier):
@@ -13,13 +12,10 @@ class KNearestNeighborsClassifier(BaseClassifier):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
-        ###
-        # BUILD YOUR MODEL
-        # weights='distance' sets importance of points upon classification by distance
-        # default: weights='uniform'
-        K = 5 # default
-        self.model = KNeighborsClassifier(metric='minkowski', weights='distance', n_neighbors=K)
-        ###
+        # Model build
+        # weights='distance': evaluates importance of neighbors based on distance
+        K = 5  # (default=5) hyper-parameter
+        self.model = KNeighborsClassifier(metric='manhattan', weights='distance', n_neighbors=K)
 
     def train(self, features, labels):
         """
@@ -29,8 +25,9 @@ class KNearestNeighborsClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        # result =
-        return
+        self.model.fit(features, labels)
+        accuracy = self.model.score(features, labels)
+        return accuracy
 
     def predict(self, features, labels):
         """
@@ -41,9 +38,9 @@ class KNearestNeighborsClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-        # accuracy =
-        return
+        accuracy = self.model.score(features, labels)
+        return accuracy
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
-        return to_categorical(IDs, num_classes=self.num_classes)
+        return IDs

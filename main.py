@@ -22,18 +22,25 @@ from termcolor import colored
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
-#from classifiers.nm_classifier import NearestMeanClassifier
+from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
-from classifiers.svmlin_classifier import SupportVectorMachineLinearKernelClassifier
+from classifiers.nvb_classifier import NaivesBayes
+from classifiers.logicregressio_classifier import LogicRegression
+from classifiers.dt_classifier import DecisionTreeClassifier
+from classifiers.rf_classifier import RForestClassfier # an ensemble of DecisionTreeClassifiers
+from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier  # one vs. rest
+from classifiers.svmlin_classifier import SupportVectorMachineLinearKernelClassifier  # one vs. one
+from classifiers.svmpol_classifier import SupportVectorMachinePolynomialKernelClassifier
+from classifiers.svmrbf_classifier import SupportVectorMachineRbfKernelClassifier
 
-# SELECTORS
+# (FEATURE) SELECTORS
 from feature_selectors.all_selector import AllSelector
-from feature_selectors.kruskall_selector import KruskallSelector
-from feature_selectors.mann_whitney import MannWhitneySelector
+from feature_selectors.NVBRFE_selector import RFESelector
+from feature_selectors.rand_selector import RandomSelector
+
 
 # CONSTANTS
 START_TIME = time.time()
-BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
 N_VARIABLES = 2834  # number of chromosomal locations
 OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
@@ -41,15 +48,22 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 
 CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
-    # 'nm': NearestMeanClassifier,
+    'nm': NearestMeanClassifier,
     'knn': KNearestNeighborsClassifier,
-    'svmlin': SupportVectorMachineLinearKernelClassifier
+    'nvb': NaivesBayes,
+    'lgr': LogicRegression,
+    'dt': DecisionTreeClassifier,
+    'rf': RForestClassfier,
+    'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
+    'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
+    'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
+    'svm_rbf': SupportVectorMachineRbfKernelClassifier
 }
 
 SELECTORS = {
     'all': AllSelector,
-    'kru': KruskallSelector,
-    'mann_wit': MannWhitneySelector
+    'rand': RandomSelector,
+    'rfe': RFESelector
 }
 
 
@@ -99,8 +113,6 @@ def cross_validate(selector, model_constructor, features, labels, num_labels):
             # TODO: check if train labels contains 3 unique values, otherwise reshuffle and repeat until True
 
             val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
-            val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(
-                labels[indices[0:val_size]])
 
             selected_indices = selector.select_features(train_features, train_labels)
 
@@ -113,6 +125,37 @@ def cross_validate(selector, model_constructor, features, labels, num_labels):
                 best_indices = selected_indices
 
     return train_accuracy, np.mean(train_accuracy), val_accuracy, np.mean(val_accuracy), best_indices
+
+
+def calc_final_accuracy(features, labels, model):
+    """
+    Calculates the cross validated accuracy of a hyperparametrised model, based on the entire dataset.
+    :param features:
+    :param labels:
+    :param model:
+    :return: training_accuracy, training_accuracy_mean, validation_accuracy, validation_accuracy_mean
+    """
+    best_accuracy = 0
+    train_accuracy, val_accuracy = [], []
+    chunk_size = int(N_SAMPLES / OUTER_FOLD)  # number of samples provided after first split
+    val_size = int(N_SAMPLES / OUTER_FOLD / INNER_FOLD)  # number of samples provided after second split
+
+    # Select chunk_size amount of rows (indices) randomly from the data for every outer round
+    for indices in [np.random.choice(len(features), chunk_size) for _ in range(OUTER_FOLD)]:
+        for _ in range(INNER_FOLD):
+            np.random.shuffle(indices)  # Reshuffle to get a different training/validation set every inner round
+
+            train_features = np.asarray([features[index] for index in indices[val_size:]])
+            train_labels = np.asarray([labels[index] for index in indices[val_size:]])
+            val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(labels[indices[0:val_size]])
+
+            # Train the model on the current round's training set, and predict the current round's validation set
+            train_accuracy.append(model.train(train_features, train_labels))
+            val_accuracy.append(model.predict(val_features, val_labels))
+
+            model.reset()
+
+    return train_accuracy, np.mean(train_accuracy), val_accuracy, np.mean(val_accuracy)
 
 
 def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean):
@@ -138,16 +181,9 @@ def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_
 
 def create_final_model(model_constructor, features, labels, selected_indices, num_labels):
     model = model_constructor(len(selected_indices), num_labels)
-    val_len = N_SAMPLES / INNER_FOLD
-    val_indices = np.random.choice(len(features), int(val_len))
-    val_features = np.asarray([features[index] for index in val_indices])
-    val_labels = np.asarray([labels[index] for index in val_indices])
-    train_features = np.asarray([features[index] for index in range(0,len(features)) if index not in val_indices])
-    train_labels = np.asarray([labels[index] for index in range(0,len(labels)) if index not in val_indices])
-    train_accuracy = model.train(train_features[:, selected_indices], train_labels)
-    val_accuracy = model.predict(val_features[:, selected_indices], val_labels)
+    train_accuracy = model.train(features[:, selected_indices], labels)
 
-    print('Final train accuracy: %f.\nFinal validation accuracy: %f' % (train_accuracy, val_accuracy))
+    print('Final train accuracy: %f.' % train_accuracy)
 
     return model
 
@@ -166,7 +202,7 @@ def main():
     if len(features) != len(labels):
         sys.exit('Data and response files do not have the same amount of lines')
 
-    # TODO: Data pre-processing and feature selection
+    # TODO: Data pre-processing
 
     # Triple cross-validation (with random sampling without replacement) (similar to Wessels, 2005)
     # Hyper-parameter selection can be integrated (e. g. k in kNN)
@@ -193,6 +229,12 @@ def main():
 
     print('Triple-CV was finished.')
     plot_accuracy(model_constructor, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean)
+
+    # Show model accuracy on entire dataset
+    print('Showing accuracy of model on entire dataset')
+    final_train_acc, final_train_mean, final_val_acc, final_val_mean = \
+        calc_final_accuracy(features[:, selected_indices], labels, model_constructor(len(selected_indices), num_unique_labels))
+    plot_accuracy(model_constructor, final_train_acc, final_train_mean, final_val_acc, final_val_mean)
 
     # Train one last time on entire dataset
     model = create_final_model(model_constructor, features, labels, selected_indices, num_unique_labels)

@@ -1,18 +1,20 @@
-# Support Vector Machine with RBF Kernel
+# Random Forest Classifier (L. Breiman, “Random Forests”, Machine Learning, 45(1), 5 - 32, 2001)
+# hand-crafted by Beans
 
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
-from sklearn import svm
 from numpy import unique
+from sklearn.ensemble import RandomForestClassifier
 
-class SupportVectorMachineRbfKernelClassifier(BaseClassifier):
+
+class RForestClassfier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
         # model build
-        # degree = 3 is default
-        self.model = svm.SVC(kernel='rbf')
+        # max_depth=5 (a mode of regularization)
+        self.model = RandomForestClassifier(n_estimators=10, criterion='entropy')
 
     def train(self, features, labels):
         """
