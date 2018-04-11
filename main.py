@@ -22,9 +22,14 @@ from termcolor import colored
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
-from classifiers.nm_classifier import NearestMeanClassifier
+#from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
+from classifiers.svmlin_classifier import SupportVectorMachineLinearKernelClassifier
+
+# SELECTORS
 from feature_selectors.all_selector import AllSelector
+from feature_selectors.kruskall_selector import KruskallSelector
+from feature_selectors.mann_whitney import MannWhitneySelector
 
 # CONSTANTS
 START_TIME = time.time()
@@ -36,12 +41,15 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 
 CLASSIFIERS = {
     'dnn': DeepNeuralClassifier,
-    'nm': NearestMeanClassifier,
-    'knn': KNearestNeighborsClassifier
+    # 'nm': NearestMeanClassifier,
+    'knn': KNearestNeighborsClassifier,
+    'svmlin': SupportVectorMachineLinearKernelClassifier
 }
 
 SELECTORS = {
-    'all': AllSelector
+    'all': AllSelector,
+    'kru': KruskallSelector,
+    'mann_wit': MannWhitneySelector
 }
 
 
@@ -94,7 +102,7 @@ def cross_validate(selector, model_constructor, features, labels, num_labels):
             val_features, val_labels = np.asarray(features[indices[0:val_size]]), np.asarray(
                 labels[indices[0:val_size]])
 
-            selected_indices = selector.select_features(train_features)
+            selected_indices = selector.select_features(train_features, train_labels)
 
             # Train the model on the current round's training set, and predict the current round's validation set
             model = model_constructor(len(selected_indices), num_labels)

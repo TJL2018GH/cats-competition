@@ -3,6 +3,8 @@
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
 from sklearn import svm
+from keras.utils import to_categorical
+from numpy import unique
 
 class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
@@ -11,8 +13,8 @@ class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
 
         ###
         # BUILD YOUR MODEL
-	# SVC (one-against-one approach, Knerr et al., 1990)
-	self.model = svm.SVC(kernel='linear')
+	    # SVC (one-against-one approach, Knerr et al., 1990)
+        self.model = svm.SVC(kernel='linear')
         ###
 
     def train(self, features, labels):
@@ -23,8 +25,8 @@ class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-	self.model.fit(features, labels)
-	train_accuracy = score(self.model.predict(features), labels)
+        self.model.fit(features, labels)
+        train_accuracy = score(self.model.predict(features), labels)
         return train_accuracy
 
     def predict(self, features, labels):
@@ -36,8 +38,8 @@ class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         labels = self.labels_to_categorical(labels)
-	self.model.predict(features)
-	test_accuracy = score(self.model.predict(features), labels)
+        self.model.predict(features)
+        test_accuracy = score(self.model.predict(features), labels)
         return test_accuracy
 
     def labels_to_categorical(self, labels):
