@@ -39,6 +39,7 @@ from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.rand_selector import RandomSelector
 from feature_selectors.mann_whitney import MannWhitneySelector
 from feature_selectors.kruskall_selector import KruskallSelector
+from feature_selectors.perm_cor_selector import PermCorSelector
 
 # CONSTANTS
 START_TIME = time.time()
@@ -66,7 +67,8 @@ SELECTORS = {
     'rand': RandomSelector,
     'rfe': RFESelector,
     'mann': MannWhitneySelector,
-    'kru': KruskallSelector
+    'kru': KruskallSelector,
+    'pcor': PermCorSelector
 }
 
 
