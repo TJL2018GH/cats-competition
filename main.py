@@ -77,27 +77,6 @@ def get_data():
     return train_call, train_clinical
 
 
-def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean):
-    """
-    Plots the accuracies of all rounds of a triple cross validation
-    :param train_accuracy:
-    :param val_accuracy:
-    :return:
-    """
-    print('Training accuracy: %.4f.' % train_accuracy_mean)
-    print(colored('Validation accuracy: %.4f.', 'green') % val_accuracy_mean + " You 'mirin, bra?")
-    print('The distribution of the evaluation metric (accuracy) is being plotted.')
-
-    plt.figure()
-    plt.plot(train_accuracy, alpha=0.4, label='training accuracies')
-    plt.plot(val_accuracy, alpha=0.4, label='validation accuracies')
-    plt.xlabel('Cross-validation round')
-    plt.ylabel('Accuracy')
-    plt.title('Distribution of accuracies in three-fold CV for %s' % model.__class__.__name__)
-    plt.legend()
-    plt.show()
-
-
 def create_final_model(model_constructor, selector_constructor, features, labels, num_labels):
     selected_indices = selector_constructor().select_features(features, labels)
     model = model_constructor(len(selected_indices), num_labels)
@@ -123,23 +102,26 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
     outer_accuracies, inner_accuracies = [], []
     outer_best = {'accuracy': 0, 'model': None, 'selector': None}
 
+    # Outer fold, used for accuracy validation of best selector/classifier pairs
     for outer_i in range(0, outer_fold):
         outer_train, outer_val = slice_data(features, labels, outer_fold, outer_i)
         middle_best = {'accuracy': 0, 'model': None, 'selector': None}
 
+        # Middle fold, used for selecting the optimal selector
         for middle_i in range(0, middle_fold):
             middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold, middle_i)
             selector = list(selectors.values())[middle_i]()
             selected_indices = selector.select_features(middle_train['features'], middle_train['labels'])
             inner_best = {'accuracy': 0, 'model': None}
 
+            # Inner fold, used for selecting the optimal classifier
             for inner_i in range(0, inner_fold):
                 inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold,
                                                     inner_i)
                 classifier = list(classifiers.values())[inner_i](len(selected_indices), num_labels)
+                print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
                 classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
                 accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
-
                 result = {'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
                           'selector': selector.__class__}
                 inner_accuracies.append(result)
@@ -147,15 +129,19 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 if accuracy > inner_best['accuracy']:
                     inner_best = result
 
+            # Calculate and save accuracy of best classifier for current feature selector
             classifier = inner_best['model'](len(selected_indices), num_labels)
+            print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
             classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
             accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
 
             if accuracy > middle_best['accuracy']:
                 middle_best = {'accuracy': accuracy, 'model': inner_best['model'], 'selector': inner_best['selector']}
 
+        # Calculate and save accuracy of best feature selector / classifier pair
         selected_indices = middle_best['selector']().select_features(outer_train['features'], outer_train['labels'])
         classifier = middle_best['model'](len(selected_indices), num_labels)
+        print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
         classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
         result = {'accuracy': accuracy, 'model': middle_best['model'], 'selector': middle_best['selector']}
@@ -210,19 +196,17 @@ def main():
     # TODO: Data pre-processing
 
     # test if provided constants INNER_FOLD and OUTER_FOLD are allowed
-    if not (N_SAMPLES % OUTER_FOLD == 0 and N_SAMPLES / OUTER_FOLD % INNER_FOLD == 0):
-        print('INNER_FOLD and OUTER_FOLD constants are not appropriate.')
+    if not (N_SAMPLES % OUTER_FOLD == 0):
+        print('OUTER_FOLD constant is not appropriate.')
         print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
         sys.exit()
-
-    if len(sys.argv) != 3 or sys.argv[1] not in selectors.keys() or sys.argv[2] not in classifiers.keys():
-        sys.exit('Usage: python main.py [%s] [%s]' % ('|'.join(selectors.keys()), '|'.join(classifiers.keys())))
 
     # Select model to run, based on command line parameter
     feature_length, num_unique_labels = features.shape[1], len(set(labels))
 
     # give standard output
-    print('Triple cross-validation with %i-fold and subsequent %i-fold split is initiated.' % (OUTER_FOLD, INNER_FOLD))
+    print('Triple cross-validation with %i-fold and subsequent %i-fold and %i-fold splits is initiated.' %
+          (OUTER_FOLD, len(selectors.keys()), len(classifiers.keys())))
 
     best, outer_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
     plot_accuracies(inner_acc, 'Inner fold accuracies')
