@@ -26,6 +26,8 @@ from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaiveBayesClassifier
 from feature_selectors.all_selector import AllSelector
+from feature_selectors.kruskall_selector import KruskallSelector
+from feature_selectors.mann_whitney import MannWhitneySelector
 from feature_selectors.rand_selector import RandomSelector
 
 # CONSTANTS
@@ -47,7 +49,9 @@ classifiers = {
 
 selectors = {
     'all': AllSelector,
-    'rand': RandomSelector
+    'rand': RandomSelector,
+    'kruskall': KruskallSelector,
+    'mannwhitney': MannWhitneySelector
 }
 
 
