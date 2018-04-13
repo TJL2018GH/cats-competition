@@ -1,0 +1,64 @@
+# Support Vector Machine with Linear Kernel (one-against-one approach, Knerr et al., 1990)
+# hand-crafted by Beans
+
+# IMPORTS
+from classifiers.base_classifier import BaseClassifier
+from numpy import unique
+from sklearn import svm
+from keras.utils import to_categorical
+from numpy import unique
+
+class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
+    def __init__(self, feature_length, num_classes):
+        super().__init__(feature_length, num_classes)
+        self.num_classes = num_classes
+
+<<<<<<< HEAD
+        ###
+        # BUILD YOUR MODEL
+	    # SVC (one-against-one approach, Knerr et al., 1990)
+        self.model = svm.SVC(kernel='linear')
+        ###
+=======
+        # model build
+        self.model = svm.SVC(kernel='linear')
+>>>>>>> c7e1c13215bdd806676416329171140b71a0696d
+
+    def train(self, features, labels):
+        """
+        Using a set of features and labels, trains the classifier and returns the training accuracy.
+        :param features: An MxN matrix of features to use in prediction
+        :param labels: An M row list of labels to train to predict
+        :return: Prediction accuracy, as a float between 0 and 1
+        """
+        labels = self.labels_to_categorical(labels)
+        self.model.fit(features, labels)
+<<<<<<< HEAD
+        train_accuracy = score(self.model.predict(features), labels)
+        return train_accuracy
+=======
+        accuracy = self.model.score(features, labels)
+        return accuracy
+>>>>>>> c7e1c13215bdd806676416329171140b71a0696d
+
+    def predict(self, features, labels):
+        """
+        Using a set of features and labels, predicts the labels from the features,
+        and returns the accuracy of predicted vs actual labels.
+        :param features: An MxN matrix of features to use in prediction
+        :param labels: An M row list of labels to test prediction accuracy on
+        :return: Prediction accuracy, as a float between 0 and 1
+        """
+        labels = self.labels_to_categorical(labels)
+<<<<<<< HEAD
+        self.model.predict(features)
+        test_accuracy = score(self.model.predict(features), labels)
+        return test_accuracy
+=======
+        accuracy = self.model.score(features, labels)
+        return accuracy
+>>>>>>> c7e1c13215bdd806676416329171140b71a0696d
+
+    def labels_to_categorical(self, labels):
+        _, IDs = unique(labels, return_inverse=True)
+        return IDs

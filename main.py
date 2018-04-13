@@ -29,6 +29,7 @@ from feature_selectors.all_selector import AllSelector
 from feature_selectors.kruskall_selector import KruskallSelector
 from feature_selectors.mann_whitney import MannWhitneySelector
 from feature_selectors.rand_selector import RandomSelector
+from feature_selectors.gene_based_selector import GeneIndexSelector
 
 # CONSTANTS
 
@@ -51,7 +52,8 @@ selectors = {
     'all': AllSelector,
     'rand': RandomSelector,
     'kruskall': KruskallSelector,
-    'mannwhitney': MannWhitneySelector
+    'mannwhitney': MannWhitneySelector,
+    'geneindex': GeneIndexSelector
 }
 
 
