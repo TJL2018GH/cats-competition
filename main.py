@@ -22,9 +22,9 @@ from termcolor import colored
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
-# from classifiers.nm_classifier import NearestMeanClassifier
+from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
-# from classifiers.naivebayses import NaivesBayes
+from classifiers.nvb_classifier import NaiveBayesClassifier
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.rand_selector import RandomSelector
 
@@ -40,9 +40,9 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 
 classifiers = {
     'dnn': DeepNeuralClassifier,
-    # 'nm': NearestMeanClassifier,
+    'nm': NearestMeanClassifier,
     'knn': KNearestNeighborsClassifier,
-    # 'nvb': NaivesBayes
+    'nvb': NaiveBayesClassifier
 }
 
 selectors = {

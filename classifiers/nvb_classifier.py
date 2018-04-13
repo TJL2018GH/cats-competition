@@ -3,7 +3,7 @@ from numpy import unique
 from classifiers.base_classifier import BaseClassifier
 
 
-class NaivesBayes(BaseClassifier):
+class NaiveBayesClassifier(BaseClassifier):
 
 	def __init__(self,feature_length,num_classes,x=10):
 
