@@ -23,11 +23,10 @@ from termcolor import colored
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
 # from classifiers.nm_classifier import NearestMeanClassifier
-# from classifiers.knn_classifier import KNearestNeighborsClassifier
-from classifiers.naivebayses import NaivesBayes
+from classifiers.knn_classifier import KNearestNeighborsClassifier
+# from classifiers.naivebayses import NaivesBayes
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.rand_selector import RandomSelector
-
 
 # CONSTANTS
 
@@ -42,8 +41,8 @@ INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 
 classifiers = {
     'dnn': DeepNeuralClassifier,
     # 'nm': NearestMeanClassifier,
-    # 'knn': KNearestNeighborsClassifier,
-    'nvb': NaivesBayes
+    'knn': KNearestNeighborsClassifier,
+    # 'nvb': NaivesBayes
 }
 
 selectors = {
@@ -95,7 +94,8 @@ def plot_accuracy(model, train_accuracy, train_accuracy_mean, val_accuracy, val_
     plt.show()
 
 
-def create_final_model(model_constructor, features, labels, selected_indices, num_labels):
+def create_final_model(model_constructor, selector_constructor, features, labels, num_labels):
+    selected_indices = selector_constructor().select_features(features, labels)
     model = model_constructor(len(selected_indices), num_labels)
     train_accuracy = model.train(features[:, selected_indices], labels)
 
@@ -103,28 +103,91 @@ def create_final_model(model_constructor, features, labels, selected_indices, nu
 
     return model
 
-def slice_data(features, labels, folds, current_fold):
-    train_indices = range(0, current_fold * len(features)) + range((current_fold + 1) * len(features), len(features))
-    val_indices = range(current_fold * len(features), (current_fold + 1) * len(features))
+
+def slice_data(features: list, labels: list, folds: int, current_fold: int) -> object:
+    val_begin = int(current_fold / folds)
+    val_end = int(val_begin + len(features) / folds)
+    train_indices = list(range(0, val_begin)) + list(range(val_end, len(features)))
+    val_indices = list(range(val_begin, val_end))
     train = {'features': features[train_indices], 'labels': labels[train_indices]}
     val = {'features': features[val_indices], 'labels': labels[val_indices]}
     return train, val
 
-def triple_cross_validate(features, labels, num_labels):
+
+def triple_cross_validate(features: list, labels: list, num_labels: int):
     outer_fold, middle_fold, inner_fold = OUTER_FOLD, len(selectors), len(classifiers)
+    outer_accuracies, inner_accuracies = [], []
+    outer_best = {'accuracy': 0, 'model': None, 'selector': None}
 
     for outer_i in range(0, outer_fold):
         outer_train, outer_val = slice_data(features, labels, outer_fold, outer_i)
+        middle_best = {'accuracy': 0, 'model': None, 'selector': None}
 
         for middle_i in range(0, middle_fold):
             middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold, middle_i)
-            selector = selectors[middle_i]()
-            selected_indices = selector.select_features(middle_train['features'])
+            selector = list(selectors.values())[middle_i]()
+            selected_indices = selector.select_features(middle_train['features'], middle_train['labels'])
+            inner_best = {'accuracy': 0, 'model': None}
 
             for inner_i in range(0, inner_fold):
-                inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold, inner_i)
-                classifier = classifiers[inner_i](len(selected_indices), num_labels)
-                accuracy = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
+                inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold,
+                                                    inner_i)
+                classifier = list(classifiers.values())[inner_i](len(selected_indices), num_labels)
+                classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
+                accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
+
+                result = {'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
+                          'selector': selector.__class__}
+                inner_accuracies.append(result)
+
+                if accuracy > inner_best['accuracy']:
+                    inner_best = result
+
+            classifier = inner_best['model'](len(selected_indices), num_labels)
+            classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
+            accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
+
+            if accuracy > middle_best['accuracy']:
+                middle_best = {'accuracy': accuracy, 'model': inner_best['model'], 'selector': inner_best['selector']}
+
+        selected_indices = middle_best['selector']().select_features(outer_train['features'], outer_train['labels'])
+        classifier = middle_best['model'](len(selected_indices), num_labels)
+        classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
+        accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
+        result = {'accuracy': accuracy, 'model': middle_best['model'], 'selector': middle_best['selector']}
+        outer_accuracies.append(result)
+
+        if accuracy > outer_best['accuracy']:
+            outer_best = result
+
+    return outer_best, outer_accuracies, inner_accuracies
+
+
+def plot_accuracies(accuracies: list, title='Accuracies'):
+    grouped = {}
+
+    for entry in accuracies:
+        model, selector, accuracy = entry['model'], entry['selector'], entry['accuracy']
+        key = '%s / %s' % (selector.__name__.replace('Selector', ''), model.__name__.replace('Classifier', ''))
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(accuracy)
+
+    means = [np.mean(group) for group in grouped.values()]
+    stds = [np.std(group) for group in grouped.values()]
+    names = ['%s / %d' % (key, len(grouped[key])) for key in grouped.keys()]
+    ticks = range(0, len(means))
+
+    plt.figure()
+    plt.bar(ticks, means, yerr=stds)
+    plt.xlabel('Selector/classifier pairs')
+    plt.ylabel('Validation accuracy')
+    plt.title(title)
+    plt.xticks(ticks, names, rotation=20, fontsize=6)
+    plt.subplots_adjust(bottom=0.2)
+    plt.show()
+    # for entry in grouped:
+
 
 def main():
     print('Script execution was initiated.')
@@ -142,9 +205,6 @@ def main():
 
     # TODO: Data pre-processing
 
-    # Triple cross-validation (with random sampling without replacement) (similar to Wessels, 2005)
-    # Hyper-parameter selection can be integrated (e. g. k in kNN)
-    # (ALTERNATIVE: WITH REPLACEMENT, then other OUTER_FOLD AND INNER_FOLD are allowed)
     # test if provided constants INNER_FOLD and OUTER_FOLD are allowed
     if not (N_SAMPLES % OUTER_FOLD == 0 and N_SAMPLES / OUTER_FOLD % INNER_FOLD == 0):
         print('INNER_FOLD and OUTER_FOLD constants are not appropriate.')
@@ -156,26 +216,20 @@ def main():
 
     # Select model to run, based on command line parameter
     feature_length, num_unique_labels = features.shape[1], len(set(labels))
-    selector = selectors[sys.argv[1]]()
-    model_constructor = classifiers[sys.argv[2]]
 
     # give standard output
     print('Triple cross-validation with %i-fold and subsequent %i-fold split is initiated.' % (OUTER_FOLD, INNER_FOLD))
 
-    train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean, \
-        selected_indices = cross_validate(selector, model_constructor, features, labels, num_unique_labels)
+    best, outer_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
+    plot_accuracies(inner_acc, 'Inner fold accuracies')
+    plot_accuracies(outer_acc, 'Outer fold accuracies')
 
     print('Triple-CV was finished.')
-    plot_accuracy(model_constructor, train_accuracy, train_accuracy_mean, val_accuracy, val_accuracy_mean)
+    print('Best performing pair (%f%%): %s / %s' % (best['accuracy'], best['selector'], best['model']))
 
-    # Show model accuracy on entire dataset
-    print('Showing accuracy of model on entire dataset')
-    final_train_acc, final_train_mean, final_val_acc, final_val_mean = \
-        calc_final_accuracy(features[:, selected_indices], labels, model_constructor(len(selected_indices), num_unique_labels))
-    plot_accuracy(model_constructor, final_train_acc, final_train_mean, final_val_acc, final_val_mean)
 
     # Train one last time on entire dataset
-    model = create_final_model(model_constructor, features, labels, selected_indices, num_unique_labels)
+    model = create_final_model(best['model'], best['selector'], features, labels, num_unique_labels)
 
     # TODO: Save model as *.pkl USING sklearn.joblib() ?
 
