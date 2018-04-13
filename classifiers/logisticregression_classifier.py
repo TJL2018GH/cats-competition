@@ -4,7 +4,7 @@ from classifiers.base_classifier import BaseClassifier
 from sklearn.feature_selection import RFE
 
 
-class LogicRegression(BaseClassifier):
+class LogisticRegressionClassifier(BaseClassifier):
 
 	def __init__(self,feature_length,num_classes,x=10):
 
@@ -21,7 +21,7 @@ class LogicRegression(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
-		model = LogisticRegression()
+		model = LogisticRegressionClassifier()
 		self.model = RFE(model,1)
 		labels = self.labels_to_categorical(labels)
 		self.model.fit(features,labels)
