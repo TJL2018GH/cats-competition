@@ -34,6 +34,7 @@ from feature_selectors.kruskall_selector import KruskallSelector
 from feature_selectors.mann_whitney import MannWhitneySelector
 from feature_selectors.perm_cor_selector import PermCorSelector
 from feature_selectors.rand_selector import RandomSelector
+from feature_selectors.gene_based_selector import GeneIndexSelector
 
 # CONSTANTS
 
@@ -60,8 +61,8 @@ selectors = {
     'rand': RandomSelector,
     'kruskall': KruskallSelector,
     'mannwhitney': MannWhitneySelector,
-    'rfe': RFESelector,
-    # 'pcor': PermCorSelector
+    'geneindex': GeneIndexSelector,
+    'rfe': RFESelector
 }
 
 
