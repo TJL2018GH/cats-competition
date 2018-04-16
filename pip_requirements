@@ -1,3 +1,4 @@
 graphviz==0.8.2
 mlxtend==0.10.0
 sklearn==0.0
+Pillow==5.1.0

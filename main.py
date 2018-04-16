@@ -11,11 +11,14 @@ Evaluation metric should be accuracy.
 """
 
 # IMPORT OF LIBRARIES
+import colorsys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+
+from PIL import ImageColor
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
@@ -41,7 +44,7 @@ from feature_selectors.gene_based_selector import GeneIndexSelector
 START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
-OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+OUTER_FOLD = 5  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
 
 classifiers = {
     'dnn': DeepNeuralClassifier,
@@ -131,9 +134,9 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                                                     inner_i)
                 classifier = list(classifiers.values())[inner_i](len(selected_indices), num_labels)
                 print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
-                classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
+                train_acc = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
                 accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
-                result = {'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
+                result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
                           'selector': selector.__class__}
                 inner_accuracies.append(result)
                 print(result)
@@ -144,19 +147,19 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
             # Calculate and save accuracy of best classifier for current feature selector
             classifier = inner_best['model'](len(selected_indices), num_labels)
             print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
-            classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
+            train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
             accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
 
             if accuracy > middle_best['accuracy']:
-                middle_best = {'accuracy': accuracy, 'model': inner_best['model'], 'selector': inner_best['selector']}
+                middle_best = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'], 'selector': inner_best['selector']}
 
         # Calculate and save accuracy of best feature selector / classifier pair
         selected_indices = middle_best['selector']().select_features(outer_train['features'], outer_train['labels'])
         classifier = middle_best['model'](len(selected_indices), num_labels)
         print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
-        classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
+        train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
-        result = {'accuracy': accuracy, 'model': middle_best['model'], 'selector': middle_best['selector']}
+        result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'], 'selector': middle_best['selector']}
         outer_accuracies.append(result)
 
         if accuracy > outer_best['accuracy']:
@@ -164,34 +167,51 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
     return outer_best, outer_accuracies, inner_accuracies
 
+def make_faded(colorcode):
+    """
+    Takes a hex RGB color code, and returns a faded (less saturation) version of it.
+    :param colorcode: Hex RGB string (e.g. #AABBCC)
+    :return: Hex RGB string (e.g. #AABBCC)
+    """
+    r, g, b = ImageColor.getrgb(colorcode)
+    h, l, s = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    l = min([l * 1.5, 1.0])
+    s *= 0.4
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return '#%02X%02X%02X' % (int(r*255), int(g*255), int(b*255))
+
 
 def plot_accuracies(accuracies: list, title='Accuracies'):
-    grouped = {}
-
-    for entry in accuracies:
-        model, selector, accuracy = entry['model'], entry['selector'], entry['accuracy']
-        key = '%s / %s' % (selector.__name__.replace('Selector', ''), model.__name__.replace('Classifier', ''))
-        if key not in grouped:
-            grouped[key] = []
-        grouped[key].append(accuracy)
-
-    means = [np.mean(group) for group in grouped.values()]
-    stds = [np.std(group) for group in grouped.values()]
-    names = ['%s / %d' % (key, len(grouped[key])) for key in grouped.keys()]
-    available_colours = ['#0082c8', '#3cb44b', '#ffe119', '#f58231', '#e6194b', '#911eb4', '#d2f53c',
-                         '#fabebe', '#008080', '#aa6e28', '#800000', '#ffd8b1']
-    selectors = [name.split(' / ')[0] for name in names]
-    unique_selectors = list(set(selectors))
-    colours = [available_colours[unique_selectors.index(selector) % len(available_colours)] for selector in selectors]
-    ticks = range(0, len(means))
-
     plt.figure()
-    plt.bar(ticks, means, yerr=stds)
-    plt.bar(ticks, means, yerr=stds, color=colours)
+
+    field_names = ['accuracy', 'train_accuracy']
+    for index, field_name in enumerate(field_names):
+        grouped = {}
+        for entry in accuracies:
+            model, selector, accuracy = entry['model'], entry['selector'], entry[field_name]
+            key = '%s / %s' % (selector.__name__.replace('Selector', ''), model.__name__.replace('Classifier', ''))
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(accuracy)
+
+        means = [np.mean(group) for group in grouped.values()]
+        stds = [np.std(group) for group in grouped.values()]
+        names = ['%s / %d' % (key, len(grouped[key])) for key in grouped.keys()]
+        available_colours = ['#0082c8', '#3cb44b', '#ffe119', '#f58231', '#e6194b', '#911eb4', '#d2f53c',
+                             '#fabebe', '#008080', '#aa6e28', '#800000', '#ffd8b1']
+        selectors = [name.split(' / ')[0] for name in names]
+        unique_selectors = list(set(selectors))
+        colours = [available_colours[unique_selectors.index(selector) % len(available_colours)] for selector in selectors]
+        if index > 0:
+            colours = [make_faded(colour) for colour in colours]
+        ticks = [num * len(field_names) + index for num in range(0, len(means))]
+
+        plt.bar(ticks, means, yerr=stds, color=colours)
+        plt.xticks(ticks, names, rotation=90, fontsize=6)
+
     plt.xlabel('Selector/classifier pairs')
     plt.ylabel('Validation accuracy')
     plt.title(title)
-    plt.xticks(ticks, names, rotation=90, fontsize=6)
     plt.subplots_adjust(bottom=0.4)
     plt.show()
     # for entry in grouped:
