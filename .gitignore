@@ -105,3 +105,6 @@ ENV/
 # mypy
 .mypy_cache/
 /.project
+cache/best.npy
+cache/inner_acc.npy
+cache/outer_acc.npy

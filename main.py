@@ -14,20 +14,25 @@ Evaluation metric should be accuracy.
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-import sklearn as skl
 import pandas as pd
-import math
 import sys
-from termcolor import colored
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
+from classifiers.dt_classifier import DecisionTreeClassifier
+from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier
 from classifiers.nm_classifier import NearestMeanClassifier
 from classifiers.knn_classifier import KNearestNeighborsClassifier
 from classifiers.nvb_classifier import NaiveBayesClassifier
+from classifiers.rf_classifier import RForestClassfier
+from classifiers.svmlin_classifier import SupportVectorMachineLinearKernelClassifier
+from classifiers.svmpol_classifier import SupportVectorMachinePolynomialKernelClassifier
+from classifiers.svmrbf_classifier import SupportVectorMachineRbfKernelClassifier
+from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.kruskall_selector import KruskallSelector
 from feature_selectors.mann_whitney import MannWhitneySelector
+from feature_selectors.perm_cor_selector import PermCorSelector
 from feature_selectors.rand_selector import RandomSelector
 
 # CONSTANTS
@@ -35,23 +40,28 @@ from feature_selectors.rand_selector import RandomSelector
 START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
-N_VARIABLES = 2834  # number of chromosomal locations
 OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
-MIDDLE_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 10-fold)
-INNER_FOLD = 5  # INNER_FOLD-fold CV (inner loop) for triple-CV (Wessels, 2005: 10-fold)
 
 classifiers = {
     'dnn': DeepNeuralClassifier,
     'nm': NearestMeanClassifier,
     'knn': KNearestNeighborsClassifier,
-    'nvb': NaiveBayesClassifier
+    'nvb': NaiveBayesClassifier,
+    'dt': DecisionTreeClassifier,
+    'rf': RForestClassfier,
+    'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
+    'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
+    'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
+    'svm_rbf': SupportVectorMachineRbfKernelClassifier
 }
 
 selectors = {
     'all': AllSelector,
     'rand': RandomSelector,
     'kruskall': KruskallSelector,
-    'mannwhitney': MannWhitneySelector
+    'mannwhitney': MannWhitneySelector,
+    'rfe': RFESelector,
+    # 'pcor': PermCorSelector
 }
 
 
@@ -125,6 +135,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 result = {'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
                           'selector': selector.__class__}
                 inner_accuracies.append(result)
+                print(result)
 
                 if accuracy > inner_best['accuracy']:
                     inner_best = result
@@ -166,15 +177,21 @@ def plot_accuracies(accuracies: list, title='Accuracies'):
     means = [np.mean(group) for group in grouped.values()]
     stds = [np.std(group) for group in grouped.values()]
     names = ['%s / %d' % (key, len(grouped[key])) for key in grouped.keys()]
+    available_colours = ['#0082c8', '#3cb44b', '#ffe119', '#f58231', '#e6194b', '#911eb4', '#d2f53c',
+                         '#fabebe', '#008080', '#aa6e28', '#800000', '#ffd8b1']
+    selectors = [name.split(' / ')[0] for name in names]
+    unique_selectors = list(set(selectors))
+    colours = [available_colours[unique_selectors.index(selector) % len(available_colours)] for selector in selectors]
     ticks = range(0, len(means))
 
     plt.figure()
     plt.bar(ticks, means, yerr=stds)
+    plt.bar(ticks, means, yerr=stds, color=colours)
     plt.xlabel('Selector/classifier pairs')
     plt.ylabel('Validation accuracy')
     plt.title(title)
-    plt.xticks(ticks, names, rotation=20, fontsize=6)
-    plt.subplots_adjust(bottom=0.2)
+    plt.xticks(ticks, names, rotation=90, fontsize=6)
+    plt.subplots_adjust(bottom=0.4)
     plt.show()
     # for entry in grouped:
 
@@ -185,41 +202,47 @@ def main():
     # Setting the seed (for reproducibility of training results)
     np.random.seed(0)
 
-    # The order in both np.arrays is the same as in the original files, which means that the label (output) \\
-    # train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
-    train_call, train_clinical = get_data()
-    features, labels = train_call, train_clinical[:, 1]
+    if len(sys.argv) < 2 or sys.argv[1] != 'reuse':
+        # The order in both np.arrays is the same as in the original files, which means that the label (output) \\
+        # train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
+        train_call, train_clinical = get_data()
+        features, labels = train_call, train_clinical[:, 1]
 
-    if len(features) != len(labels):
-        sys.exit('Data and response files do not have the same amount of lines')
+        if len(features) != len(labels):
+            sys.exit('Data and response files do not have the same amount of lines')
 
-    # TODO: Data pre-processing
+        # TODO: Data pre-processing
 
-    # test if provided constants INNER_FOLD and OUTER_FOLD are allowed
-    if not (N_SAMPLES % OUTER_FOLD == 0):
-        print('OUTER_FOLD constant is not appropriate.')
-        print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
-        sys.exit()
+        # test if provided constants INNER_FOLD and OUTER_FOLD are allowed
+        if not (N_SAMPLES % OUTER_FOLD == 0):
+            print('OUTER_FOLD constant is not appropriate.')
+            print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
+            sys.exit()
 
-    # Select model to run, based on command line parameter
-    feature_length, num_unique_labels = features.shape[1], len(set(labels))
+        # Select model to run, based on command line parameter
+        feature_length, num_unique_labels = features.shape[1], len(set(labels))
 
-    # give standard output
-    print('Triple cross-validation with %i-fold and subsequent %i-fold and %i-fold splits is initiated.' %
-          (OUTER_FOLD, len(selectors.keys()), len(classifiers.keys())))
+        # give standard output
+        print('Triple cross-validation with %i-fold and subsequent %i-fold and %i-fold splits is initiated.' %
+              (OUTER_FOLD, len(selectors.keys()), len(classifiers.keys())))
 
-    best, outer_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
+        best, outer_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
+        np.save('cache/best.npy', best)
+        np.save('cache/outer_acc.npy', outer_acc)
+        np.save('cache/inner_acc.npy', inner_acc)
+
+        # TODO: Save model as *.pkl USING sklearn.joblib() ?
+        # Train one last time on entire dataset
+        model = create_final_model(best['model'], best['selector'], features, labels, num_unique_labels)
+    else:
+        best, outer_acc, inner_acc = np.load('cache/best.npy').item(), \
+                                     np.load('cache/outer_acc.npy'), np.load('cache/inner_acc.npy')
+
     plot_accuracies(inner_acc, 'Inner fold accuracies')
     plot_accuracies(outer_acc, 'Outer fold accuracies')
 
     print('Triple-CV was finished.')
     print('Best performing pair (%f%%): %s / %s' % (best['accuracy'], best['selector'], best['model']))
-
-
-    # Train one last time on entire dataset
-    model = create_final_model(best['model'], best['selector'], features, labels, num_unique_labels)
-
-    # TODO: Save model as *.pkl USING sklearn.joblib() ?
 
 
 # EXECUTION
