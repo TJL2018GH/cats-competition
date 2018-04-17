@@ -8,14 +8,15 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 class KNearestNeighborsClassifier(BaseClassifier):
+    K = 5 # (default=5) hyper-parameter
+
     def __init__(self, feature_length, num_classes):
         super().__init__(feature_length, num_classes)
         self.num_classes = num_classes
 
         # Model build
         # weights='distance': evaluates importance of neighbors based on distance
-        K = 5  # (default=5) hyper-parameter
-        self.model = KNeighborsClassifier(metric='manhattan', weights='distance', n_neighbors=K)
+        self.model = KNeighborsClassifier(metric='manhattan', weights='distance', n_neighbors=self.K)
 
     def train(self, features, labels):
         """
