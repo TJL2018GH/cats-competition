@@ -44,7 +44,7 @@ from feature_selectors.gene_based_selector import GeneIndexSelector
 START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
-OUTER_FOLD = 5  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+OUTER_FOLD = 10  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
 
 classifiers = {
     'dnn': DeepNeuralClassifier,
@@ -137,12 +137,14 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 train_acc = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
                 accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
                 result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
-                          'selector': selector.__class__}
+                          'selector': selector.__class__, 'indices': selected_indices}
                 inner_accuracies.append(result)
                 print(result)
 
                 if accuracy > inner_best['accuracy']:
                     inner_best = result
+
+                del classifier
 
             # Calculate and save accuracy of best classifier for current feature selector
             classifier = inner_best['model'](len(selected_indices), num_labels)
@@ -151,19 +153,26 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
             accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
 
             if accuracy > middle_best['accuracy']:
-                middle_best = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'], 'selector': inner_best['selector']}
+                middle_best = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'],
+                               'selector': inner_best['selector'], 'indices': selected_indices}
+
+            del classifier, selector
 
         # Calculate and save accuracy of best feature selector / classifier pair
-        selected_indices = middle_best['selector']().select_features(outer_train['features'], outer_train['labels'])
+        selector = middle_best['selector']()
+        selected_indices = selector.select_features(outer_train['features'], outer_train['labels'])
         classifier = middle_best['model'](len(selected_indices), num_labels)
         print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
         train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
-        result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'], 'selector': middle_best['selector']}
+        result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'],
+                  'selector': middle_best['selector'], 'indices': selected_indices}
         outer_accuracies.append(result)
 
         if accuracy > outer_best['accuracy']:
             outer_best = result
+
+        del classifier, selector
 
     return outer_best, outer_accuracies, inner_accuracies
 
@@ -181,18 +190,21 @@ def make_faded(colorcode):
     return '#%02X%02X%02X' % (int(r*255), int(g*255), int(b*255))
 
 
-def plot_accuracies(accuracies: list, title='Accuracies'):
+def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected features'):
     plt.figure()
+
+    selected_indices = []
 
     field_names = ['accuracy', 'train_accuracy']
     for index, field_name in enumerate(field_names):
         grouped = {}
         for entry in accuracies:
-            model, selector, accuracy = entry['model'], entry['selector'], entry[field_name]
+            model, selector, accuracy, indices = entry['model'], entry['selector'], entry[field_name], entry['indices']
             key = '%s / %s' % (selector.__name__.replace('Selector', ''), model.__name__.replace('Classifier', ''))
             if key not in grouped:
                 grouped[key] = []
             grouped[key].append(accuracy)
+            selected_indices += indices
 
         means = [np.mean(group) for group in grouped.values()]
         stds = [np.std(group) for group in grouped.values()]
@@ -214,7 +226,11 @@ def plot_accuracies(accuracies: list, title='Accuracies'):
     plt.title(title)
     plt.subplots_adjust(bottom=0.4)
     plt.show()
-    # for entry in grouped:
+
+    plt.hist(selected_indices)
+    plt.xlabel('Selected feature index')
+    plt.ylabel('Count')
+    plt.title(hist_title)
 
 
 def main():
