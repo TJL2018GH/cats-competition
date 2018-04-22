@@ -204,7 +204,7 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
             if key not in grouped:
                 grouped[key] = []
             grouped[key].append(accuracy)
-            selected_indices += indices
+            selected_indices += list(indices)
 
         means = [np.mean(group) for group in grouped.values()]
         stds = [np.std(group) for group in grouped.values()]
@@ -227,10 +227,14 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
     plt.subplots_adjust(bottom=0.4)
     plt.show()
 
-    plt.hist(selected_indices)
+    unique, counts = np.unique(selected_indices, return_counts=True)
+    x = range(0, len(unique))
+    plt.bar(x, counts)
+    plt.xticks(x, unique, rotation=90, fontsize=6)
     plt.xlabel('Selected feature index')
     plt.ylabel('Count')
     plt.title(hist_title)
+    plt.show()
 
 
 def main():
