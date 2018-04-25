@@ -10,7 +10,7 @@ class LogisticRegressionClassifier(BaseClassifier):
 
 		super().__init__(feature_length,num_classes)
 
-
+		self.model = LogisticRegression(penalty='l2', multi_class='multinomial', solver='newton-cg')
 
 		self.num_classes = num_classes
 
@@ -21,8 +21,6 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
-		model = LogisticRegressionClassifier()
-		self.model = RFE(model,1)
 		labels = self.labels_to_categorical(labels)
 		self.model.fit(features,labels)
 		accuracy = self.model.score(features,labels)
