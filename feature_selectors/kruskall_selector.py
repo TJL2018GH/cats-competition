@@ -28,6 +28,8 @@ class KruskallSelector(BaseSelector):
         :return: list of indices of interesting features
         """
 
+        num_features = 5
+
         her2_samples, hr_samples, trip_neg_samples = group_by_classifier(data, labels)
 
         p_values = np.zeros((data.shape[1]))
@@ -41,7 +43,8 @@ class KruskallSelector(BaseSelector):
         # Multiple testing correction provide no significant variables, we'll stick with this for now
         #significant_p_value_indices = np.asarray(np.where(np.array(p_values) < 0.03))[0]
 
-        # For now just selects best feature
-        significant_p_value_indices = np.asarray(np.where(p_values == p_values.min())[0])
+        significant_p_value_indices = np.asarray(np.argsort(p_values)[0:num_features])
+
+        #significant_p_value_indices = np.asarray(np.where(p_values == p_values.min())[0])
 
         return significant_p_value_indices
