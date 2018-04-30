@@ -44,7 +44,10 @@ from feature_selectors.gene_based_selector import GeneIndexSelector
 START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
-OUTER_FOLD = 10  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+MIDDLE_FOLD = 5
+INNER_FOLD = 5
+
 
 classifiers = {
     'dnn': DeepNeuralClassifier,
@@ -112,7 +115,7 @@ def slice_data(features: list, labels: list, folds: int, current_fold: int) -> o
 
 
 def triple_cross_validate(features: list, labels: list, num_labels: int):
-    outer_fold, middle_fold, inner_fold = OUTER_FOLD, len(selectors), len(classifiers)
+    outer_fold, middle_fold, inner_fold = OUTER_FOLD, MIDDLE_FOLD, INNER_FOLD
     outer_accuracies, inner_accuracies = [], []
     outer_best = {'accuracy': 0, 'model': None, 'selector': None}
 
@@ -123,40 +126,42 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
         # Middle fold, used for selecting the optimal selector
         for middle_i in range(0, middle_fold):
-            middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold, middle_i)
-            selector = list(selectors.values())[middle_i]()
-            selected_indices = selector.select_features(middle_train['features'], middle_train['labels'])
-            inner_best = {'accuracy': 0, 'model': None}
+            for selector_i in range(0, len(selectors)):
+                middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold, middle_i)
+                selector = list(selectors.values())[selector_i]()
+                selected_indices = selector.select_features(middle_train['features'], middle_train['labels'])
+                inner_best = {'accuracy': 0, 'model': None}
 
-            # Inner fold, used for selecting the optimal classifier
-            for inner_i in range(0, inner_fold):
-                inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold,
-                                                    inner_i)
-                classifier = list(classifiers.values())[inner_i](len(selected_indices), num_labels)
-                print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
-                train_acc = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
-                accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
-                result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': list(classifiers.values())[inner_i],
-                          'selector': selector.__class__, 'indices': selected_indices}
-                inner_accuracies.append(result)
-                print(result)
+                # Inner fold, used for selecting the optimal classifier
+                for inner_i in range(0, inner_fold):
+                    for classifier_i in range(0, len(classifiers)):
+                        inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold,
+                                                            inner_i)
+                        classifier = list(classifiers.values())[classifier_i](len(selected_indices), num_labels)
+                        print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
+                        train_acc = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
+                        accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
+                        result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': list(classifiers.values())[classifier_i],
+                                  'selector': selector.__class__, 'indices': selected_indices}
+                        inner_accuracies.append(result)
+                        print(result)
 
-                if accuracy > inner_best['accuracy']:
-                    inner_best = result
+                        if accuracy > inner_best['accuracy']:
+                            inner_best = result
 
-                del classifier
+                        del classifier
 
-            # Calculate and save accuracy of best classifier for current feature selector
-            classifier = inner_best['model'](len(selected_indices), num_labels)
-            print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
-            train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
-            accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
+                # Calculate and save accuracy of best classifier for current feature selector
+                classifier = inner_best['model'](len(selected_indices), num_labels)
+                print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
+                train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
+                accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
 
-            if accuracy > middle_best['accuracy']:
-                middle_best = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'],
-                               'selector': inner_best['selector'], 'indices': selected_indices}
+                if accuracy > middle_best['accuracy']:
+                    middle_best = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'],
+                                   'selector': inner_best['selector'], 'indices': selected_indices}
 
-            del classifier, selector
+                del classifier, selector
 
         # Calculate and save accuracy of best feature selector / classifier pair
         selector = middle_best['selector']()
