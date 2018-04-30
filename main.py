@@ -31,6 +31,8 @@ from classifiers.rf_classifier import RForestClassfier
 from classifiers.svmlin_classifier import SupportVectorMachineLinearKernelClassifier
 from classifiers.svmpol_classifier import SupportVectorMachinePolynomialKernelClassifier
 from classifiers.svmrbf_classifier import SupportVectorMachineRbfKernelClassifier
+from classifiers.gba_classifier import GradientBoostingAlgorithm
+from classifiers.lr_classifier import LogisticRegressionClassifier
 from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.kruskall_selector import KruskallSelector
@@ -56,10 +58,12 @@ classifiers = {
     'nvb': NaiveBayesClassifier,
     'dt': DecisionTreeClassifier,
     'rf': RForestClassfier,
+    'lg': LogisticRegressionClassifier,
     'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
     'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
     'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
-    'svm_rbf': SupportVectorMachineRbfKernelClassifier
+    'svm_rbf': SupportVectorMachineRbfKernelClassifier,
+    'gba_ens': GradientBoostingAlgorithm
 }
 
 selectors = {

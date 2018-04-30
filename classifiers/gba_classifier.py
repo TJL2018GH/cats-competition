@@ -1,16 +1,16 @@
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
 from numpy import unique
 from classifiers.base_classifier import BaseClassifier
 from sklearn.feature_selection import RFE
 
 
-class LogisticRegressionClassifier(BaseClassifier):
+class GradientBoostingAlgorithm(BaseClassifier):
 
 	def __init__(self,feature_length,num_classes,x=10):
 
 		super().__init__(feature_length,num_classes)
 
-
+		self.model = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0)
 
 		self.num_classes = num_classes
 
@@ -21,8 +21,6 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
-		model = LogisticRegressionClassifier()
-		self.model = RFE(model,1)
 		labels = self.labels_to_categorical(labels)
 		self.model.fit(features,labels)
 		accuracy = self.model.score(features,labels)

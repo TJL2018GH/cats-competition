@@ -43,13 +43,14 @@ class MannWhitneySelector(BaseSelector):
         :return: list of indices of interesting features
         """
 
+        num_features = 5
+
         her2_samples, hr_samples, trip_neg_samples = group_by_classifier(data, labels)
 
         # Pairwise p values of a mann whitney u test, the first row between her2 and hr samples
         # The second between her2 samples and triple negative samples and the third triple negative and hr samples
 
         p_values = np.zeros((3, data.shape[1]))
-
 
         for index in range(data.shape[1]):
             p_values[0, index] = mannwhitneyu_test(her2_samples[:, index], hr_samples[:, index])
@@ -58,5 +59,15 @@ class MannWhitneySelector(BaseSelector):
 
         # sorted_indices = sorted(list(set(np.asarray(np.where(p_values < 0.005)[1]))))
         # For now just selects best feature
-        sorted_indices = np.asarray(np.where(p_values == p_values.min())[1])
-        return sorted_indices
+
+        indices_sorted = np.argsort(p_values.flatten())
+
+        # flatten matrix does not have correct indices
+        indices_sorted = indices_sorted % data.shape[1]
+
+        # some p values will be the same, remove copies
+        indices_sorted, ind = np.unique(indices_sorted, return_index=True)
+        indices_sorted = indices_sorted[np.argsort(ind)]
+
+        # return selected indices
+        return np.asarray(indices_sorted[0:num_features])
