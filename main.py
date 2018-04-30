@@ -13,6 +13,7 @@ Evaluation metric should be accuracy.
 # IMPORT OF LIBRARIES
 import colorsys
 import time
+import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -49,7 +50,6 @@ N_SAMPLES = 100  # number of samples (patients)
 OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
 MIDDLE_FOLD = 5
 INNER_FOLD = 5
-
 
 classifiers = {
     'dnn': DeepNeuralClassifier,
@@ -98,6 +98,25 @@ def get_data():
     return train_call, train_clinical
 
 
+def get_best_performing(results):
+    """
+    Returns the best performing entry in a list of validation accuracies.
+    :param results: List of validation accuracies
+    :return: Best performing entry
+    """
+    if len(results) == 0:
+        print("Warning: get_best_performance() called with empty results list")
+        return None
+
+    best = results[0]
+
+    for result in results:
+        if result['accuracy'] > best['accuracy']:
+            best = result
+
+    return best
+
+
 def create_final_model(model_constructor, selector_constructor, features, labels, num_labels):
     selected_indices = selector_constructor().select_features(features, labels)
     model = model_constructor(len(selected_indices), num_labels)
@@ -119,8 +138,9 @@ def slice_data(features: list, labels: list, folds: int, current_fold: int) -> o
 
 
 def triple_cross_validate(features: list, labels: list, num_labels: int):
+    start_time = time.time()
     outer_fold, middle_fold, inner_fold = OUTER_FOLD, MIDDLE_FOLD, INNER_FOLD
-    outer_accuracies, inner_accuracies = [], []
+    outer_accuracies, middle_accuracies, inner_accuracies = [], [], []
     outer_best = {'accuracy': 0, 'model': None, 'selector': None}
 
     # Outer fold, used for accuracy validation of best selector/classifier pairs
@@ -131,7 +151,8 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         # Middle fold, used for selecting the optimal selector
         for middle_i in range(0, middle_fold):
             for selector_i in range(0, len(selectors)):
-                middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold, middle_i)
+                middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold,
+                                                      middle_i)
                 selector = list(selectors.values())[selector_i]()
                 selected_indices = selector.select_features(middle_train['features'], middle_train['labels'])
                 inner_best = {'accuracy': 0, 'model': None}
@@ -139,21 +160,21 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 # Inner fold, used for selecting the optimal classifier
                 for inner_i in range(0, inner_fold):
                     for classifier_i in range(0, len(classifiers)):
-                        inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'], inner_fold,
+                        inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'],
+                                                            inner_fold,
                                                             inner_i)
                         classifier = list(classifiers.values())[classifier_i](len(selected_indices), num_labels)
                         print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
-                        train_acc = classifier.train(inner_train['features'][:, selected_indices], inner_train['labels'])
+                        train_acc = classifier.train(inner_train['features'][:, selected_indices],
+                                                     inner_train['labels'])
                         accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
-                        result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': list(classifiers.values())[classifier_i],
-                                  'selector': selector.__class__, 'indices': selected_indices}
-                        inner_accuracies.append(result)
-                        print(result)
-
-                        if accuracy > inner_best['accuracy']:
-                            inner_best = result
+                        inner_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy,
+                                  'model': list(classifiers.values())[classifier_i],
+                                  'selector': selector.__class__, 'indices': selected_indices})
 
                         del classifier
+
+                inner_best = get_best_performing(inner_accuracies)
 
                 # Calculate and save accuracy of best classifier for current feature selector
                 classifier = inner_best['model'](len(selected_indices), num_labels)
@@ -161,11 +182,20 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
                 accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
 
-                if accuracy > middle_best['accuracy']:
-                    middle_best = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'],
-                                   'selector': inner_best['selector'], 'indices': selected_indices}
+                middle_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'],
+                                          'selector': inner_best['selector'], 'indices': selected_indices})
 
+                cur_time = time.time()
+                pct_complete = (
+                    ((outer_i+1) * MIDDLE_FOLD * len(selectors) + (middle_i+1) * len(selectors) + (selector_i+1)) /
+                    (OUTER_FOLD * MIDDLE_FOLD * len(selectors) + MIDDLE_FOLD * len(selectors) + len(selectors)))
+                remaining = 1/pct_complete
+                print('======== Progress: %f%% (estimated time remaining %s) ========' % (
+                    pct_complete, datetime.timedelta(seconds=(cur_time-start_time)*remaining)
+                ))
                 del classifier, selector
+
+            middle_best = get_best_performing(middle_accuracies)
 
         # Calculate and save accuracy of best feature selector / classifier pair
         selector = middle_best['selector']()
@@ -174,16 +204,15 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
         train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
-        result = {'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'],
-                  'selector': middle_best['selector'], 'indices': selected_indices}
-        outer_accuracies.append(result)
-
-        if accuracy > outer_best['accuracy']:
-            outer_best = result
+        outer_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'],
+                  'selector': middle_best['selector'], 'indices': selected_indices})
 
         del classifier, selector
 
-    return outer_best, outer_accuracies, inner_accuracies
+    outer_best = get_best_performing(outer_accuracies)
+
+    return outer_best, outer_accuracies, middle_accuracies, inner_accuracies
+
 
 def make_faded(colorcode):
     """
@@ -192,11 +221,11 @@ def make_faded(colorcode):
     :return: Hex RGB string (e.g. #AABBCC)
     """
     r, g, b = ImageColor.getrgb(colorcode)
-    h, l, s = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     l = min([l * 1.5, 1.0])
     s *= 0.4
     r, g, b = colorsys.hls_to_rgb(h, l, s)
-    return '#%02X%02X%02X' % (int(r*255), int(g*255), int(b*255))
+    return '#%02X%02X%02X' % (int(r * 255), int(g * 255), int(b * 255))
 
 
 def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected features'):
@@ -222,7 +251,8 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
                              '#fabebe', '#008080', '#aa6e28', '#800000', '#ffd8b1']
         selectors = [name.split(' / ')[0] for name in names]
         unique_selectors = list(set(selectors))
-        colours = [available_colours[unique_selectors.index(selector) % len(available_colours)] for selector in selectors]
+        colours = [available_colours[unique_selectors.index(selector) % len(available_colours)] for selector in
+                   selectors]
         if index > 0:
             colours = [make_faded(colour) for colour in colours]
         ticks = [num * len(field_names) + index for num in range(0, len(means))]
@@ -276,9 +306,10 @@ def main():
         print('Triple cross-validation with %i-fold and subsequent %i-fold and %i-fold splits is initiated.' %
               (OUTER_FOLD, len(selectors.keys()), len(classifiers.keys())))
 
-        best, outer_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
+        best, outer_acc, middle_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
         np.save('cache/best.npy', best)
         np.save('cache/outer_acc.npy', outer_acc)
+        np.save('cache/middle_acc.npy', middle_acc)
         np.save('cache/inner_acc.npy', inner_acc)
 
         # TODO: Save model as *.pkl USING sklearn.joblib() ?
@@ -289,6 +320,7 @@ def main():
                                      np.load('cache/outer_acc.npy'), np.load('cache/inner_acc.npy')
 
     plot_accuracies(inner_acc, 'Inner fold accuracies')
+    plot_accuracies(middle_acc, 'Middle fold accuracies')
     plot_accuracies(outer_acc, 'Outer fold accuracies')
 
     print('Triple-CV was finished.')
