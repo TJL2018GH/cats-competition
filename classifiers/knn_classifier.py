@@ -30,6 +30,9 @@ class KNearestNeighborsClassifier(BaseClassifier):
         accuracy = self.model.score(features, labels)
         return accuracy
 
+    def get_prediction(self,features,labels):
+        return self.model.predict(features)
+
     def predict(self, features, labels):
         """
         Using a set of features and labels, predicts the labels from the features,

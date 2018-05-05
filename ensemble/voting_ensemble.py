@@ -1,18 +1,23 @@
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble.voting_classifier import VotingClassifier
 from numpy import unique
 from classifiers.base_classifier import BaseClassifier
-from sklearn.feature_selection import RFE
 
 
-class LogisticRegressionClassifier(BaseClassifier):
+class VotingEnsemble(BaseClassifier):
 
 	def __init__(self,feature_length,num_classes,x=10):
 
 		super().__init__(feature_length,num_classes)
 
-		self.model = LogisticRegression(penalty='l2', multi_class='multinomial', solver='newton-cg')
+		self.estimators = []
+		self.model = VotingClassifier(self.estimators)
 
 		self.num_classes = num_classes
+
+	def update_estimators(self,estimators_list):
+
+		self.estimators = estimators_list
+		self.model = VotingClassifier(self.estimators)
 
 	def train(self,features,labels):
 		"""
@@ -21,6 +26,7 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
+
 		labels = self.labels_to_categorical(labels)
 		self.model.fit(features,labels)
 		accuracy = self.model.score(features,labels)
@@ -40,6 +46,9 @@ class LogisticRegressionClassifier(BaseClassifier):
 		labels = self.model.predict(features)
 		accuracy = self.model.score(features,label_train)
 		return accuracy
+
+	def get_prediction(self,features):
+		return self.model.predict(features)
 
 	def reset(self):
 		"""

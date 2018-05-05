@@ -34,6 +34,8 @@ from classifiers.svmpol_classifier import SupportVectorMachinePolynomialKernelCl
 from classifiers.svmrbf_classifier import SupportVectorMachineRbfKernelClassifier
 from classifiers.gba_classifier import GradientBoostingAlgorithm
 from classifiers.lr_classifier import LogisticRegressionClassifier
+from ensemble.voting_ensemble import VotingEnsemble
+from ensemble.best_ensemble import BestEnsemble
 from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.kruskall_selector import KruskallSelector
@@ -42,6 +44,8 @@ from feature_selectors.perm_cor_selector import PermCorSelector
 from feature_selectors.rand_selector import RandomSelector
 from feature_selectors.gene_based_selector import GeneIndexSelector
 
+# IMPORT FOR CROSSVAL
+from sklearn.model_selection import train_test_split
 # CONSTANTS
 
 START_TIME = time.time()
@@ -63,7 +67,8 @@ classifiers = {
     'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
     'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
     'svm_rbf': SupportVectorMachineRbfKernelClassifier,
-    'gba_ens': GradientBoostingAlgorithm
+    'gba_ens': GradientBoostingAlgorithm,
+    'vot_ens': VotingEnsemble
 }
 
 selectors = {
@@ -74,6 +79,46 @@ selectors = {
     'geneindex': GeneIndexSelector,
     'rfe': RFESelector
 }
+
+ensembles = {'best_vot': BestEnsemble
+
+}
+
+
+def stratification(labels, n_fold, n_class):
+
+    tot_num_samples = len(labels)
+    sample_pool = pd.DataFrame({'labels': labels,'position': range(0, tot_num_samples)})
+    sample_pool = sample_pool.groupby('labels')
+    fold_size = round(float(tot_num_samples/n_fold),0)
+    classes_pool = []
+    folds_by_class = []
+    smallest_class = 0
+    idx_smallest = 0
+
+    # find the smallest class and create classes chunk:
+    for class_idx in range(n_class):
+
+        classes_pool.append(sample_pool.get_group('{}'.format(class_idx)))
+        if smallest_class >= len(sample_pool.get_group('{}'.format(class_idx))):
+            smallest_class = len(sample_pool.get_group('{}'.format(class_idx)))
+            idx_smallest = class_idx
+
+    # create the balanced fold
+    for class_chunk in classes_pool:
+        balanced_class = class_chunk.sample(n=smallest_class)
+        temp_chunks=[]
+        for fold in range(n_fold):
+            fold_chunk = balanced_class[fold:fold + fold_size,:]
+            fold_chunk["fold"] = np.ones(fold_size) * fold
+            temp_chunks.append(fold_chunk)
+        folds_by_class.append(pd.concat(temp_chunks))
+
+    cross_validation_folds = pd.concat(folds_by_class)
+    cross_validation_folds = cross_validation_folds.groupyby('fold').sort('fold')
+
+
+    return np.array(cross_validation_folds['position']),(tot_num_samples-len((cross_validation_folds['position'])
 
 
 def get_data():
@@ -138,51 +183,83 @@ def slice_data(features: list, labels: list, folds: int, current_fold: int) -> o
 
 
 def triple_cross_validate(features: list, labels: list, num_labels: int):
+    ensemble = BestEnsemble()
+
     start_time = time.time()
     outer_fold, middle_fold, inner_fold = OUTER_FOLD, MIDDLE_FOLD, INNER_FOLD
     outer_accuracies, middle_accuracies, inner_accuracies = [], [], []
     outer_best = {'accuracy': 0, 'model': None, 'selector': None}
 
+    index_stratified,count_rem1 = stratification(labels,outer_fold,num_labels)
+    features = features[index_stratified,:]
+    labels = labels[index_stratified,:]
+
     # Outer fold, used for accuracy validation of best selector/classifier pairs
     for outer_i in range(0, outer_fold):
+
         outer_train, outer_val = slice_data(features, labels, outer_fold, outer_i)
         middle_best = {'accuracy': 0, 'model': None, 'selector': None}
+
+
+        index_stratified,count_rem2 = stratification(outer_train['labels'],middle_fold,num_labels)
+        outer_train['features'] = outer_train['features'][index_stratified, :]
+        outer_train['labels'] = outer_train['labels'][index_stratified, :]
 
         # Middle fold, used for selecting the optimal selector
         for middle_i in range(0, middle_fold):
             for selector_i in range(0, len(selectors)):
+
+
                 middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold,
                                                       middle_i)
                 selector = list(selectors.values())[selector_i]()
                 selected_indices = selector.select_features(middle_train['features'], middle_train['labels'])
                 inner_best = {'accuracy': 0, 'model': None}
 
+                index_stratified,count_rem3 = stratification(middle_train['labels'],inner_fold,num_labels)
+                middle_train['features'] = middle_train['features'][index_stratified, :]
+                middle_train['labels'] = middle_train['labels'][index_stratified, :]
+
                 # Inner fold, used for selecting the optimal classifier
                 for inner_i in range(0, inner_fold):
                     for classifier_i in range(0, len(classifiers)):
+
                         inner_train, inner_val = slice_data(middle_train['features'], middle_train['labels'],
                                                             inner_fold,
                                                             inner_i)
                         classifier = list(classifiers.values())[classifier_i](len(selected_indices), num_labels)
+
+                        if list(classifiers.keys())[classifier_i] == 'vot_ens':
+                            classifier.update_estimators(classifiers.items())
+
                         print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
                         train_acc = classifier.train(inner_train['features'][:, selected_indices],
                                                      inner_train['labels'])
                         accuracy = classifier.predict(inner_val['features'][:, selected_indices], inner_val['labels'])
                         inner_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy,
                                   'model': list(classifiers.values())[classifier_i],
+                                  'model_name':list(classifiers.keys())[classifier_i],
                                   'selector': selector.__class__, 'indices': selected_indices})
 
                         del classifier
 
                 inner_best = get_best_performing(inner_accuracies)
 
+                ensemble.add_combination(inner_best)
+
+
                 # Calculate and save accuracy of best classifier for current feature selector
                 classifier = inner_best['model'](len(selected_indices), num_labels)
+
+                if inner_best['model_name'] == 'vot_ens':
+                    classifier.update_estimators(classifiers.items())
+
                 print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
                 train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
                 accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
 
-                middle_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy, 'model': inner_best['model'],
+                middle_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy,
+                                          'model': inner_best['model'],'model_name':inner_best['model_name'],
                                           'selector': inner_best['selector'], 'indices': selected_indices})
 
                 cur_time = time.time()
@@ -195,12 +272,31 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 ))
                 del classifier, selector
 
-            middle_best = get_best_performing(middle_accuracies)
+        ##ensemble middle loop
+
+        for middle_i in range(0,middle_fold):
+
+            middle_train,middle_val = slice_data(outer_train['features'],outer_train['labels'],middle_fold,
+                                                     middle_i)
+            print('[middle] Training %s / %s' % (classifier.__class__.__name__,selector.__class__.__name__))
+            train_acc = ensemble.train(middle_train['features'],middle_train['labels'])
+            accuracy = ensemble.predict(middle_val['features'],middle_val['labels'])
+
+            middle_accuracies.append({'train_accuracy': train_acc,'accuracy': accuracy,
+                                      'model': list(classifiers.values())[0],
+                                      'selector': 'multi', 'indices': 'multi'})
+
+        middle_best = get_best_performing(middle_accuracies)
+
 
         # Calculate and save accuracy of best feature selector / classifier pair
         selector = middle_best['selector']()
         selected_indices = selector.select_features(outer_train['features'], outer_train['labels'])
         classifier = middle_best['model'](len(selected_indices), num_labels)
+        if middle_best['model_name'] == 'vot_ens':
+            classifier.update_estimators(classifiers.items())
+        elif middle_best['mode_name'] == 'best_ens':
+            classifier = ensemble
         print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
         train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
@@ -209,9 +305,12 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
         del classifier, selector
 
+
     outer_best = get_best_performing(outer_accuracies)
 
+    print('{} samples has been removed during folds stratification'.format(count_rem1 + count_rem2 + count_rem3))
     return outer_best, outer_accuracies, middle_accuracies, inner_accuracies
+
 
 
 def make_faded(colorcode):

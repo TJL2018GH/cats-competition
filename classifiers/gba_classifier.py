@@ -49,6 +49,9 @@ class GradientBoostingAlgorithm(BaseClassifier):
 
 		pass
 
+	def get_prediction(self,features,labels):
+		return self.model.predict(features)
+
 	def labels_to_categorical(self,labels):
 		_,IDs = unique(labels,return_inverse=True)
 		return IDs

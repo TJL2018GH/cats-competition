@@ -54,6 +54,9 @@ class DeepNeuralClassifier(BaseClassifier):
         return accuracy
 
 
+    def get_prediction(self,features,labels):
+        return self.model.predict(features)
+
     def reset(self):
         """
         Resets the trained weights / parameters to initial state
