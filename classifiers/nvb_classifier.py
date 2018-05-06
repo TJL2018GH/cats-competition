@@ -41,7 +41,7 @@ class NaiveBayesClassifier(BaseClassifier):
 		accuracy = self.model.score(features,label_train)
 		return accuracy
 
-	def get_prediction(self,features,labels):
+	def get_prediction(self,features):
 		return self.model.predict(features)
 
 	def reset(self):

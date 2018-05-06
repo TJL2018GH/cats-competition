@@ -22,7 +22,7 @@ class BaseClassifier:
         """
         pass
 
-    def get_prediction(self,features,labels):
+    def get_prediction(self,features):
         pass
 
     def reset(self):

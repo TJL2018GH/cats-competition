@@ -39,7 +39,7 @@ class SupportVectorMachineLinearKernelClassifier(BaseClassifier):
         return accuracy
 
 
-    def get_prediction(self,features,labels):
+    def get_prediction(self,features):
         return self.model.predict(features)
 
 

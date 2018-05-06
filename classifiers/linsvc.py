@@ -26,7 +26,7 @@ class SupportVectorMachineLinearKernelOneVsRestClassifier(BaseClassifier):
         accuracy = self.model.score(features, labels)
         return accuracy
 
-    def get_prediction(self,features,labels):
+    def get_prediction(self,features):
         return self.model.predict(features)
 
     def predict(self, features, labels):

@@ -29,29 +29,37 @@ class BestEnsemble(BaseClassifier):
 		self.num_classes = num_classes
 
 	def add_combination(self,combination):
-
-
-		self.models.append(combination)
+		self.combinations.append(combination)
+		print(self.combinations)
 
 	def clean_model(self):
 		self.models = []
 
 	def vote(self, models):
+
 		predictions = []
 		final_prediction = []
 		tot_model = 0
+
 		for models_set in models:
+
 			tot_model += 1
 
-			predictions.append(models_set['prediction'])
 
-		df_prediction = pd.concat(predictions)
+			predictions.append(pd.DataFrame(models_set['prediction']))
+
+		df_prediction = predictions[0]
+		for i in range(1,len(predictions)):
+			df_prediction = df_prediction.join(predictions[i],lsuffix='_caller', rsuffix='_other')
+
 
 		for _,row in df_prediction.iterrows():
 			uni,counts = unique(row,return_counts=True)
+
 			max_temp = 0
 			idx_temp = 0
-			for i in range(self.num_classes):
+			for i in range(len(uni)):
+
 				if counts[i]/tot_model > max_temp:
 					idx_temp = i
 			final_prediction.append(uni[idx_temp])
@@ -65,13 +73,15 @@ class BestEnsemble(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
+		self.clean_model()
 		labels = self.labels_to_categorical(labels)
 		for combination in self.combinations:
-			self.clean_model()
+			print(len(self.combinations))
+
 			model = combination['model'](len(combination['indices']), self.num_classes)
-			model.fit(features[:,combination['indices']],labels)
-			pred_responses = model.get_prediction(features)
-			self.models.append({'model':model,'info_comb':combination, 'prediction': pred_responses})
+			model.train(features[:,combination['indices']],labels)
+			pred_responses = model.get_prediction(features[:,combination['indices']])
+			self.models.append({'model':model, 'info_comb': combination, 'prediction': pred_responses})
 
 		pred_responses = self.vote(self.models)
 
@@ -91,8 +101,8 @@ class BestEnsemble(BaseClassifier):
         """
 		label_test = self.labels_to_categorical(labels)
 		for i in range(len(self.models)):
-
-			self.models[i]['prediction'] = self.models[i]['model'].get_prediction(features)
+			combination = self.models[i]['info_comb']
+			self.models[i]['prediction'] = self.models[i]['model'].get_prediction(features[:, combination['indices']])
 
 		pred_responses = self.vote(self.models)
 

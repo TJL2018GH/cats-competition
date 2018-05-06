@@ -1,7 +1,13 @@
+from classifiers.base_classifier import BaseClassifier
 from sklearn.ensemble.voting_classifier import VotingClassifier
 from numpy import unique
 from classifiers.base_classifier import BaseClassifier
-
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import NearestCentroid
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import svm
 
 class VotingEnsemble(BaseClassifier):
 
@@ -9,15 +15,20 @@ class VotingEnsemble(BaseClassifier):
 
 		super().__init__(feature_length,num_classes)
 
-		self.estimators = []
-		self.model = VotingClassifier(self.estimators)
+
+		self.model = VotingClassifier(
+			  estimators=[
+			  ('gba', GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0)),
+			  ('knn', KNeighborsClassifier(metric='manhattan', weights='distance', n_neighbors=3)),
+			  ('Nc', NearestCentroid(metric='manhattan')),('nvb',GaussianNB()),
+			  ('rf', RandomForestClassifier(n_estimators=10,criterion='entropy')),
+			  ('svmlin', svm.SVC(kernel='linear')),('svmpol', svm.SVC(kernel='poly')),('svmrbf', svm.SVC(kernel='rbf'))],
+			voting='hard'
+		  )
+
 
 		self.num_classes = num_classes
 
-	def update_estimators(self,estimators_list):
-
-		self.estimators = estimators_list
-		self.model = VotingClassifier(self.estimators)
 
 	def train(self,features,labels):
 		"""

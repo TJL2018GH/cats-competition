@@ -49,7 +49,7 @@ class GradientBoostingAlgorithm(BaseClassifier):
 
 		pass
 
-	def get_prediction(self,features,labels):
+	def get_prediction(self,features):
 		return self.model.predict(features)
 
 	def labels_to_categorical(self,labels):

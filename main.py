@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
-import PIL as pil
+from PIL import ImageColor
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
@@ -53,23 +53,23 @@ START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
 OUTER_FOLD = 3  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
-MIDDLE_FOLD = 6
-INNER_FOLD = 5
+MIDDLE_FOLD = 2
+INNER_FOLD = 2
 
 classifiers = {
-    'dnn': DeepNeuralClassifier,
-    'nm': NearestMeanClassifier,
-    'knn': KNearestNeighborsClassifier,
-    'nvb': NaiveBayesClassifier,
-    'dt': DecisionTreeClassifier,
+    #'dnn': DeepNeuralClassifier,
+    #'nm': NearestMeanClassifier,
+    #'knn': KNearestNeighborsClassifier,
+    #'nvb': NaiveBayesClassifier,
+    #'dt': DecisionTreeClassifier,
     'rf': RForestClassfier,
     'lg': LogisticRegressionClassifier,
-    'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
-    'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
-    'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
-    'svm_rbf': SupportVectorMachineRbfKernelClassifier,
+    #'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
+    #'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
+    #'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
+    #'svm_rbf': SupportVectorMachineRbfKernelClassifier,
     'gba_ens': GradientBoostingAlgorithm,
-     'vot_ens': VotingEnsemble
+    #'vot_ens': VotingEnsemble
 }
 
 selectors = {
@@ -241,9 +241,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                                                             inner_i)
                         classifier = list(classifiers.values())[classifier_i](len(selected_indices), num_labels)
 
-                        if list(classifiers.keys())[classifier_i] == 'vot_ens':
-                            classifier.update_estimators(classifiers.items())
-
                         print('[inner] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
                         train_acc = classifier.train(inner_train['features'][:, selected_indices],
                                                      inner_train['labels'])
@@ -262,10 +259,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
                 # Calculate and save accuracy of best classifier for current feature selector
                 classifier = inner_best['model'](len(selected_indices), num_labels)
-
-                if inner_best['model_name'] == 'vot_ens':
-                    classifier.update_estimators(classifiers.items())
-
                 print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
                 train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
                 accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
@@ -290,7 +283,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
             middle_train,middle_val = slice_data(outer_train['features'],outer_train['labels'],middle_fold,
                                                      middle_i)
-            print('[middle] Training %s / %s' % (classifier.__class__.__name__,selector.__class__.__name__))
+            print('[middle] Training Best ensemble')
             train_acc = ensemble.train(middle_train['features'],middle_train['labels'])
             accuracy = ensemble.predict(middle_val['features'],middle_val['labels'])
 
@@ -305,9 +298,8 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         selector = middle_best['selector']()
         selected_indices = selector.select_features(outer_train['features'], outer_train['labels'])
         classifier = middle_best['model'](len(selected_indices), num_labels)
-        if middle_best['model_name'] == 'vot_ens':
-            classifier.update_estimators(classifiers.items())
-        elif middle_best['mode_name'] == 'best_ens':
+
+        if middle_best['model_name'] == 'best_ens':
             classifier = ensemble
         print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
         train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
@@ -331,7 +323,7 @@ def make_faded(colorcode):
     :param colorcode: Hex RGB string (e.g. #AABBCC)
     :return: Hex RGB string (e.g. #AABBCC)
     """
-    r, g, b = pil.ImageColor.getrgb(colorcode)
+    r, g, b = ImageColor.getrgb(colorcode)
     h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     l = min([l * 1.5, 1.0])
     s *= 0.4

@@ -3,7 +3,7 @@
 
 # IMPORTS
 from classifiers.base_classifier import BaseClassifier
-from sklearn import RadiusNeighborsClassifier
+from sklearn.neighbors import RadiusNeighborsClassifier
 
 class RadiusNearestNeighborsClassifier(BaseClassifier):
     def __init__(self, feature_length, num_classes):
@@ -38,7 +38,7 @@ class RadiusNearestNeighborsClassifier(BaseClassifier):
         # accuracy =
         return
 
-    def get_prediction(self,features,labels):
+    def get_prediction(self,features):
         return self.model.predict(features)
 
     def labels_to_categorical(self, labels):
