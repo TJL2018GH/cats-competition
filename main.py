@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
-from PIL import ImageColor
+#from PIL import ImageColor
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
@@ -36,7 +36,7 @@ from classifiers.gba_classifier import GradientBoostingAlgorithm
 from classifiers.lr_classifier import LogisticRegressionClassifier
 from ensemble.voting_ensemble import VotingEnsemble
 from ensemble.best_ensemble import BestEnsemble
-
+from feature_selectors.base_selector import BaseSelector
 from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.kruskall_selector import KruskallSelector
@@ -288,8 +288,8 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
             accuracy = ensemble.predict(middle_val['features'],middle_val['labels'])
 
             middle_accuracies.append({'train_accuracy': train_acc,'accuracy': accuracy,
-                                      'model': list(classifiers.values())[0],
-                                      'selector': 'multi', 'indices': 'multi'})
+                                      'model': list(ensembles.values())[0],
+                                      'selector': BaseSelector, 'indices': np.array([])})
 
         middle_best = get_best_performing(middle_accuracies)
 
@@ -323,7 +323,10 @@ def make_faded(colorcode):
     :param colorcode: Hex RGB string (e.g. #AABBCC)
     :return: Hex RGB string (e.g. #AABBCC)
     """
-    r, g, b = ImageColor.getrgb(colorcode)
+    #r, g, b = ImageColor.getrgb(colorcode)
+    r = np.random.randint(10,245)
+    g = np.random.randint(30,225)
+    b = np.random.randint(20,215)
     h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     l = min([l * 1.5, 1.0])
     s *= 0.4

@@ -30,7 +30,7 @@ class BestEnsemble(BaseClassifier):
 
 	def add_combination(self,combination):
 		self.combinations.append(combination)
-		print(self.combinations)
+
 
 	def clean_model(self):
 		self.models = []
@@ -76,7 +76,7 @@ class BestEnsemble(BaseClassifier):
 		self.clean_model()
 		labels = self.labels_to_categorical(labels)
 		for combination in self.combinations:
-			print(len(self.combinations))
+
 
 			model = combination['model'](len(combination['indices']), self.num_classes)
 			model.train(features[:,combination['indices']],labels)
