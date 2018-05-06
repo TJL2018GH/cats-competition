@@ -69,7 +69,7 @@ classifiers = {
     'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
     'svm_rbf': SupportVectorMachineRbfKernelClassifier,
     'gba_ens': GradientBoostingAlgorithm,
-    'vot_ens': VotingEnsemble
+     'vot_ens': VotingEnsemble
 }
 
 selectors = {
