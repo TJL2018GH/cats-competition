@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
-from PIL import ImageColor
+import PIL as pil
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
@@ -36,6 +36,7 @@ from classifiers.gba_classifier import GradientBoostingAlgorithm
 from classifiers.lr_classifier import LogisticRegressionClassifier
 from ensemble.voting_ensemble import VotingEnsemble
 from ensemble.best_ensemble import BestEnsemble
+
 from feature_selectors.NVBRFE_selector import RFESelector
 from feature_selectors.all_selector import AllSelector
 from feature_selectors.kruskall_selector import KruskallSelector
@@ -85,43 +86,12 @@ ensembles = {'best_vot': BestEnsemble
 }
 
 
-def stratification(labels, n_fold, n_class):
-
-    tot_num_samples = len(labels)
-    sample_pool = pd.DataFrame({'labels': labels,'position': range(0, tot_num_samples)})
-    sample_pool = sample_pool.groupby('labels')
-    fold_size = round(float(tot_num_samples/n_fold),0)
-    classes_pool = []
-    folds_by_class = []
-    smallest_class = 0
-    idx_smallest = 0
-
-    # find the smallest class and create classes chunk:
-    for class_idx in range(n_class):
-
-        classes_pool.append(sample_pool.get_group('{}'.format(class_idx)))
-        if smallest_class >= len(sample_pool.get_group('{}'.format(class_idx))):
-            smallest_class = len(sample_pool.get_group('{}'.format(class_idx)))
-            idx_smallest = class_idx
-
-    # create the balanced fold
-    for class_chunk in classes_pool:
-        balanced_class = class_chunk.sample(n=smallest_class)
-        temp_chunks=[]
-        for fold in range(n_fold):
-            fold_chunk = balanced_class[fold:fold + fold_size,:]
-            fold_chunk["fold"] = np.ones(fold_size) * fold
-            temp_chunks.append(fold_chunk)
-        folds_by_class.append(pd.concat(temp_chunks))
-
-    cross_validation_folds = pd.concat(folds_by_class)
-    cross_validation_folds = cross_validation_folds.groupyby('fold').sort('fold')
+def labels_to_categorical(labels):
+    _,IDs = np.unique(labels,return_inverse=True)
+    return IDs
 
 
-    return np.array(cross_validation_folds['position']),(tot_num_samples-len((cross_validation_folds['position'])
-
-
-def get_data(N_SAMPLES):
+def get_data():
     """
     Import of raw data as np.array using Pandas.
 
@@ -136,12 +106,62 @@ def get_data(N_SAMPLES):
         train_clinical.shape[0], train_clinical.shape[1]))
 
     # import and transpose of train_call.txt, samples x variables
-
     train_call = np.transpose(
         pd.read_csv('data/Train_call.txt', sep='\t', usecols=range(4, 4 + N_SAMPLES)).values.astype('float32'))
     print('Data set "train_call" was loaded (%i rows and %i cols).' % (train_call.shape[0], train_call.shape[1]))
 
     return train_call, train_clinical
+
+def stratification(labels, n_fold, n_class):
+
+    labels = labels_to_categorical(labels)
+    tot_num_samples = len(labels)
+    sample_pool = pd.DataFrame({'labels': labels ,'position': range(0, tot_num_samples)})
+    group_pool = sample_pool.groupby('labels')
+
+    fold_size = round(float(tot_num_samples/(n_fold*n_class)),0)
+    classes_pool = []
+    folds_by_class = []
+    smallest_class = len(group_pool.get_group(0))
+    idx_smallest = 0
+
+    # find the smallest class and create classes chunk:
+
+    for class_idx in range(n_class):
+
+        classes_pool.append(group_pool.get_group(class_idx))
+        if smallest_class >= len(group_pool.get_group(class_idx)):
+            smallest_class = len(group_pool.get_group(class_idx))
+            idx_smallest = class_idx
+
+    # create the balanced fold
+    for class_chunk in classes_pool:
+
+        balanced_class = class_chunk.sample(n=smallest_class)
+
+        temp_chunks=[]
+        for fold in range(n_fold):
+
+            fold_chunk = balanced_class[int(fold):int(fold + fold_size) ]
+            fold_chunk["fold"] = np.ones(int(fold_size)) * int(fold)
+
+            temp_chunks.append(fold_chunk)
+        folds_by_class.append(pd.concat(temp_chunks))
+
+    cross_validation_folds = pd.concat(folds_by_class)
+    cross_validation_folds_ordered = cross_validation_folds.sort_values('fold')
+
+    return np.array(cross_validation_folds_ordered['position']),(tot_num_samples-len((cross_validation_folds_ordered['position'])))
+
+
+def create_final_model(model_constructor, selector_constructor, features, labels, num_labels):
+    selected_indices = selector_constructor().select_features(features, labels)
+    model = model_constructor(len(selected_indices), num_labels)
+    train_accuracy = model.train(features[:, selected_indices], labels)
+
+    print('Final train accuracy: %f.' % train_accuracy)
+
+    return model
 
 
 def get_best_performing(results):
@@ -163,16 +183,6 @@ def get_best_performing(results):
     return best
 
 
-def create_final_model(model_constructor, selector_constructor, features, labels, num_labels):
-    selected_indices = selector_constructor().select_features(features, labels)
-    model = model_constructor(len(selected_indices), num_labels)
-    train_accuracy = model.train(features[:, selected_indices], labels)
-
-    print('Final train accuracy: %f.' % train_accuracy)
-
-    return model
-
-
 def slice_data(features: list, labels: list, folds: int, current_fold: int) -> object:
     val_begin = int(current_fold / folds)
     val_end = int(val_begin + len(features) / folds)
@@ -184,7 +194,7 @@ def slice_data(features: list, labels: list, folds: int, current_fold: int) -> o
 
 
 def triple_cross_validate(features: list, labels: list, num_labels: int):
-    ensemble = BestEnsemble()
+    ensemble = BestEnsemble(len(features[1,:]), num_labels)
 
     start_time = time.time()
     outer_fold, middle_fold, inner_fold = OUTER_FOLD, MIDDLE_FOLD, INNER_FOLD
@@ -192,8 +202,9 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
     outer_best = {'accuracy': 0, 'model': None, 'selector': None}
 
     index_stratified,count_rem1 = stratification(labels,outer_fold,num_labels)
-    features = features[index_stratified,:]
-    labels = labels[index_stratified,:]
+
+    features = features[index_stratified]
+    labels = labels[index_stratified]
 
     # Outer fold, used for accuracy validation of best selector/classifier pairs
     for outer_i in range(0, outer_fold):
@@ -203,8 +214,8 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
 
         index_stratified,count_rem2 = stratification(outer_train['labels'],middle_fold,num_labels)
-        outer_train['features'] = outer_train['features'][index_stratified, :]
-        outer_train['labels'] = outer_train['labels'][index_stratified, :]
+        outer_train['features'] = outer_train['features'][index_stratified]
+        outer_train['labels'] = outer_train['labels'][index_stratified]
 
         # Middle fold, used for selecting the optimal selector
         for middle_i in range(0, middle_fold):
@@ -218,8 +229,8 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 inner_best = {'accuracy': 0, 'model': None}
 
                 index_stratified,count_rem3 = stratification(middle_train['labels'],inner_fold,num_labels)
-                middle_train['features'] = middle_train['features'][index_stratified, :]
-                middle_train['labels'] = middle_train['labels'][index_stratified, :]
+                middle_train['features'] = middle_train['features'][index_stratified]
+                middle_train['labels'] = middle_train['labels'][index_stratified]
 
                 # Inner fold, used for selecting the optimal classifier
                 for inner_i in range(0, inner_fold):
@@ -320,7 +331,7 @@ def make_faded(colorcode):
     :param colorcode: Hex RGB string (e.g. #AABBCC)
     :return: Hex RGB string (e.g. #AABBCC)
     """
-    r, g, b = ImageColor.getrgb(colorcode)
+    r, g, b = pil.ImageColor.getrgb(colorcode)
     h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     l = min([l * 1.5, 1.0])
     s *= 0.4
@@ -385,7 +396,7 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] != 'reuse':
         # The order in both np.arrays is the same as in the original files, which means that the label (output) \\
         # train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
-        train_call, train_clinical = get_data(N_SAMPLES)
+        train_call, train_clinical = get_data()
         features, labels = train_call, train_clinical[:, 1]
 
         if len(features) != len(labels):
@@ -394,10 +405,10 @@ def main():
         # TODO: Data pre-processing
 
         # test if provided constants INNER_FOLD and OUTER_FOLD are allowed
-        if not (N_SAMPLES % OUTER_FOLD == 0):
-            print('OUTER_FOLD constant is not appropriate.')
-            print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
-            sys.exit()
+        #if not (N_SAMPLES % OUTER_FOLD == 0):
+        #    print('OUTER_FOLD constant is not appropriate.')
+        #    print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
+        #    sys.exit()
 
         # Select model to run, based on command line parameter
         feature_length, num_unique_labels = features.shape[1], len(set(labels))
