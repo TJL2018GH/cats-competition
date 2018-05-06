@@ -51,8 +51,8 @@ from sklearn.model_selection import train_test_split
 START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
-OUTER_FOLD = 4  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
-MIDDLE_FOLD = 5
+OUTER_FOLD = 3  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
+MIDDLE_FOLD = 6
 INNER_FOLD = 5
 
 classifiers = {
@@ -121,7 +121,7 @@ def stratification(labels, n_fold, n_class):
     return np.array(cross_validation_folds['position']),(tot_num_samples-len((cross_validation_folds['position'])
 
 
-def get_data():
+def get_data(N_SAMPLES):
     """
     Import of raw data as np.array using Pandas.
 
@@ -136,6 +136,7 @@ def get_data():
         train_clinical.shape[0], train_clinical.shape[1]))
 
     # import and transpose of train_call.txt, samples x variables
+
     train_call = np.transpose(
         pd.read_csv('data/Train_call.txt', sep='\t', usecols=range(4, 4 + N_SAMPLES)).values.astype('float32'))
     print('Data set "train_call" was loaded (%i rows and %i cols).' % (train_call.shape[0], train_call.shape[1]))
@@ -384,7 +385,7 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] != 'reuse':
         # The order in both np.arrays is the same as in the original files, which means that the label (output) \\
         # train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
-        train_call, train_clinical = get_data()
+        train_call, train_clinical = get_data(N_SAMPLES)
         features, labels = train_call, train_clinical[:, 1]
 
         if len(features) != len(labels):
