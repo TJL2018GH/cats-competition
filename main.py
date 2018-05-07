@@ -155,11 +155,15 @@ def stratification(labels, n_fold, n_class):
 
 
 def create_final_model(model_dict, selector_constructor, features, labels, num_labels, middle_accu):
+
     model_constructor = model_dict['model']
     selected_indices = selector_constructor().select_features(features, labels)
     model = model_constructor(len(selected_indices), num_labels)
+    print(model_dict['model_name'])
     if model_dict['model_name'] == 'best_ens':
         model.add_combinations_list(middle_accu)
+        selected_indices = model_dict['indices']
+
     train_accuracy = model.train(features[:, selected_indices], labels)
 
     print('Final train accuracy: %f.' % train_accuracy)
@@ -318,7 +322,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
         outer_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'],
-                                 'model_name':inner_best['model_name'],
+                                 'model_name':middle_best['model_name'],
                   'selector': middle_best['selector'], 'indices': selected_indices})
 
         del classifier, selector
