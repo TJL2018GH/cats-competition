@@ -31,6 +31,10 @@ class BestEnsemble(BaseClassifier):
 	def add_combination(self,combination):
 		self.combinations.append(combination)
 
+	def add_combinations_list(self,combinations):
+		for model_combination in combinations:
+			if model_combination['model_name'] != 'best_ens':
+				self.combinations.append(model_combination)
 
 	def clean_model(self):
 		self.models = []

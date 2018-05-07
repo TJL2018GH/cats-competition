@@ -63,7 +63,7 @@ classifiers = {
     #'nvb': NaiveBayesClassifier,
     #'dt': DecisionTreeClassifier,
     'rf': RForestClassfier,
-    'lg': LogisticRegressionClassifier,
+    #'lg': LogisticRegressionClassifier,
     #'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
     #'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
     #'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
@@ -81,7 +81,7 @@ selectors = {
     'rfe': RFESelector
 }
 
-ensembles = {'best_vot': BestEnsemble
+ensembles = {'best_ens': BestEnsemble
 
 }
 
@@ -154,9 +154,12 @@ def stratification(labels, n_fold, n_class):
     return np.array(cross_validation_folds_ordered['position']),(tot_num_samples-len((cross_validation_folds_ordered['position'])))
 
 
-def create_final_model(model_constructor, selector_constructor, features, labels, num_labels):
+def create_final_model(model_dict, selector_constructor, features, labels, num_labels, middle_accu):
+    model_constructor = model_dict['model']
     selected_indices = selector_constructor().select_features(features, labels)
     model = model_constructor(len(selected_indices), num_labels)
+    if model_dict['model_name'] == 'best_ens':
+        model.add_combinations_list(middle_accu)
     train_accuracy = model.train(features[:, selected_indices], labels)
 
     print('Final train accuracy: %f.' % train_accuracy)
@@ -173,11 +176,16 @@ def get_best_performing(results):
     if len(results) == 0:
         print("Warning: get_best_performance() called with empty results list")
         return None
+    result_table = pd.DataFrame(results)
+
+    summary = result_table.groupby(by='model_name')['accuracy']
+    summary = summary.std()
 
     best = results[0]
 
     for result in results:
-        if result['accuracy'] > best['accuracy']:
+        if result['accuracy'] - summary.loc[result['model_name']] > \
+                        best['accuracy'] - summary.loc[best['model_name']]:
             best = result
 
     return best
@@ -288,8 +296,10 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
             accuracy = ensemble.predict(middle_val['features'],middle_val['labels'])
 
             middle_accuracies.append({'train_accuracy': train_acc,'accuracy': accuracy,
-                                      'model': list(ensembles.values())[0],
-                                      'selector': BaseSelector, 'indices': np.array([])})
+                                      'model': list(ensembles.values())[0],'model_name':list(ensembles.keys())[0],
+                                      'selector': AllSelector, 'indices': np.array(range(len(middle_train['features'][0])))})
+
+
 
         middle_best = get_best_performing(middle_accuracies)
 
@@ -297,14 +307,18 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         # Calculate and save accuracy of best feature selector / classifier pair
         selector = middle_best['selector']()
         selected_indices = selector.select_features(outer_train['features'], outer_train['labels'])
+
         classifier = middle_best['model'](len(selected_indices), num_labels)
 
         if middle_best['model_name'] == 'best_ens':
-            classifier = ensemble
+            classifier.add_combinations_list(middle_accuracies)
+            selected_indices = middle_best['indices']
+
         print('[outer] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
         train_acc = classifier.train(outer_train['features'][:, selected_indices], outer_train['labels'])
         accuracy = classifier.predict(outer_val['features'][:, selected_indices], outer_val['labels'])
         outer_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy, 'model': middle_best['model'],
+                                 'model_name':inner_best['model_name'],
                   'selector': middle_best['selector'], 'indices': selected_indices})
 
         del classifier, selector
@@ -420,7 +434,7 @@ def main():
 
         # TODO: Save model as *.pkl USING sklearn.joblib() ?
         # Train one last time on entire dataset
-        model = create_final_model(best['model'], best['selector'], features, labels, num_unique_labels)
+        model = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
     else:
         best, outer_acc, inner_acc = np.load('cache/best.npy').item(), \
                                      np.load('cache/outer_acc.npy'), np.load('cache/inner_acc.npy')
