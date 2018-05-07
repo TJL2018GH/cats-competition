@@ -53,8 +53,8 @@ START_TIME = time.time()
 BEANS_CONSTANT = 66
 N_SAMPLES = 100  # number of samples (patients)
 OUTER_FOLD = 3  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 3-fold)
-MIDDLE_FOLD = 2
-INNER_FOLD = 2
+MIDDLE_FOLD = 6
+INNER_FOLD = 5
 
 classifiers = {
     #'dnn': DeepNeuralClassifier,
@@ -67,7 +67,7 @@ classifiers = {
     #'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
     #'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
     #'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
-    #'svm_rbf': SupportVectorMachineRbfKernelClassifier,
+    'svm_rbf': SupportVectorMachineRbfKernelClassifier,
     'gba_ens': GradientBoostingAlgorithm,
     #'vot_ens': VotingEnsemble
 }
@@ -188,8 +188,8 @@ def get_best_performing(results):
     best = results[0]
 
     for result in results:
-        if result['accuracy'] - summary.loc[result['model_name']] > \
-                        best['accuracy'] - summary.loc[best['model_name']]:
+        if result['accuracy'] - (result['train_accuracy'] - result['accuracy']) > \
+                        best['accuracy'] - (best['train_accuracy'] - best['accuracy']):
             best = result
 
     return best
@@ -329,7 +329,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
 
     outer_best = get_best_performing(outer_accuracies)
-
+    print(outer_best)
     print('{} samples has been removed during folds stratification'.format(count_rem1 + count_rem2 + count_rem3))
     return outer_best, outer_accuracies, middle_accuracies, inner_accuracies
 
