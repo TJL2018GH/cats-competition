@@ -45,6 +45,9 @@ class DecisionTreeClassifier(BaseClassifier):
         accuracy = self.model.score(features, labels)
         return accuracy
 
+    def get_prediction(self,features):
+        return self.model.predict(features)
+
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)
         return IDs
