@@ -108,3 +108,4 @@ ENV/
 cache/best.npy
 cache/inner_acc.npy
 cache/outer_acc.npy
+*.npy

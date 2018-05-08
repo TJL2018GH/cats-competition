@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
-#from PIL import ImageColor
+from PIL import ImageColor
 
 # CLASSIFIERS
 from classifiers.dnn_classifier import DeepNeuralClassifier
@@ -57,19 +57,19 @@ MIDDLE_FOLD = 6
 INNER_FOLD = 5
 
 classifiers = {
-    #'dnn': DeepNeuralClassifier,
-    #'nm': NearestMeanClassifier,
-    #'knn': KNearestNeighborsClassifier,
-    #'nvb': NaiveBayesClassifier,
-    #'dt': DecisionTreeClassifier,
+    'dnn': DeepNeuralClassifier,
+    'nm': NearestMeanClassifier,
+    'knn': KNearestNeighborsClassifier,
+    'nvb': NaiveBayesClassifier,
+    'dt': DecisionTreeClassifier,
     'rf': RForestClassfier,
-    #'lg': LogisticRegressionClassifier,
-    #'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
-    #'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
-    #'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
+    'lg': LogisticRegressionClassifier,
+    'svm_lin_or': SupportVectorMachineLinearKernelOneVsRestClassifier,
+    'svm_lin_oo': SupportVectorMachineLinearKernelClassifier,
+    'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
     'svm_rbf': SupportVectorMachineRbfKernelClassifier,
     'gba_ens': GradientBoostingAlgorithm,
-    #'vot_ens': VotingEnsemble
+    'vot_ens': VotingEnsemble
 }
 
 selectors = {
@@ -283,9 +283,8 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 pct_complete = (
                     ((outer_i+1) * MIDDLE_FOLD * len(selectors) + (middle_i+1) * len(selectors) + (selector_i+1)) /
                     (OUTER_FOLD * MIDDLE_FOLD * len(selectors) + MIDDLE_FOLD * len(selectors) + len(selectors)))
-                remaining = 1/pct_complete
                 print('======== Progress: %f%% (estimated time remaining %s) ========' % (
-                    pct_complete, datetime.timedelta(seconds=(cur_time-start_time)*remaining)
+                    pct_complete * 100, datetime.timedelta(seconds=(cur_time-start_time)/pct_complete)
                 ))
                 del classifier, selector
 
@@ -341,10 +340,10 @@ def make_faded(colorcode):
     :param colorcode: Hex RGB string (e.g. #AABBCC)
     :return: Hex RGB string (e.g. #AABBCC)
     """
-    #r, g, b = ImageColor.getrgb(colorcode)
-    r = np.random.randint(10,245)
-    g = np.random.randint(30,225)
-    b = np.random.randint(20,215)
+    r, g, b = ImageColor.getrgb(colorcode)
+    # r = np.random.randint(10,245)
+    # g = np.random.randint(30,225)
+    # b = np.random.randint(20,215)
     h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     l = min([l * 1.5, 1.0])
     s *= 0.4
