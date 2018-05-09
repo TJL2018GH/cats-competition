@@ -361,6 +361,10 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
         grouped = {}
         for entry in accuracies:
             model, selector, accuracy, indices = entry['model'], entry['selector'], entry[field_name], entry['indices']
+            model_name = entry['model_name']
+            if model_name == 'best_ens':
+                selected_indices = np.array([])
+
             key = '%s / %s' % (selector.__name__.replace('Selector', ''), model.__name__.replace('Classifier', ''))
             if key not in grouped:
                 grouped[key] = []
