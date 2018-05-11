@@ -391,7 +391,7 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
     plt.ylabel('Validation accuracy')
     plt.title(title)
     plt.subplots_adjust(bottom=0.4)
-    plt.show()
+    plt.savefig('results/%s.png'%title)
 
     unique, counts = np.unique(selected_indices, return_counts=True)
     x = range(0, len(unique))
@@ -400,7 +400,7 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
     plt.xlabel('Selected feature index')
     plt.ylabel('Count')
     plt.title(hist_title)
-    plt.show()
+    plt.savefig('results/%s.png'%hist_title)
 
 
 def main():
