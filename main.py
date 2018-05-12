@@ -81,8 +81,8 @@ selectors = {
     'rfe': RFESelector
 }
 
-ensembles = {'best_ens': BestEnsemble
-
+ensembles = {
+    'best_ens': BestEnsemble
 }
 
 
