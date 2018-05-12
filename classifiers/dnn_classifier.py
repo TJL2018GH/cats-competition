@@ -56,7 +56,7 @@ class DeepNeuralClassifier(BaseClassifier):
 
     def get_prediction(self,features):
         probabilities_list = self.model.predict(features)
-        return [probabilities.index(max(probabilities)) for probabilities in probabilities_list]
+        return [list(probabilities).index(max(list(probabilities))) for probabilities in probabilities_list]
 
     def reset(self):
         """
