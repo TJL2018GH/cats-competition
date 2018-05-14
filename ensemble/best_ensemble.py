@@ -95,7 +95,7 @@ class BestEnsemble(BaseClassifier):
 
 	# make sure you save model using the same library as we used in machine learning price-predictor
 
-	def predict(self,features,labels):
+	def get_accuravy(self,features,labels):
 		"""
         Using a set of features and labels, predicts the labels from the features,
         and returns the accuracy of predicted vs actual labels.
@@ -103,14 +103,7 @@ class BestEnsemble(BaseClassifier):
         :param labels: An M row list of labels to test prediction accuracy on
         :return: Prediction accuracy, as a float between 0 and 1
         """
-		label_test = self.labels_to_categorical(labels)
-		for i in range(len(self.models)):
-			combination = self.models[i]['info_comb']
-			self.models[i]['prediction'] = self.models[i]['model'].get_prediction(features[:, combination['indices']])
-
-		pred_responses = self.vote(self.models)
-
-		accuracy = accuracy_score(label_test, pred_responses)
+		accuracy = accuracy_score(labels, pred_responses)
 		return accuracy
 
 

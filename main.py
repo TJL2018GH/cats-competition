@@ -205,6 +205,32 @@ def slice_data(features: list, labels: list, folds: int, current_fold: int) -> o
     return train, val
 
 
+def vote(self, models):
+    predictions = []
+    final_prediction = []
+    tot_model = 0
+
+    for models_set in models:
+        tot_model += 1
+
+        predictions.append(pd.DataFrame(models_set['prediction']))
+
+    df_prediction = predictions[0]
+    for i in range(1, len(predictions)):
+        df_prediction = df_prediction.join(predictions[i], lsuffix='_caller', rsuffix='_other')
+
+    for _, row in df_prediction.iterrows():
+        uni, counts = unique(row, return_counts=True)
+
+        max_temp = 0
+        idx_temp = 0
+        for i in range(len(uni)):
+
+            if counts[i] / tot_model > max_temp:
+                idx_temp = i
+        final_prediction.append(uni[idx_temp])
+
+
 def triple_cross_validate(features: list, labels: list, num_labels: int):
     ensemble = BestEnsemble(len(features[1,:]), num_labels)
 
@@ -266,7 +292,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
                 inner_best = get_best_performing(inner_accuracies)
 
-                ensemble.add_combination(inner_best)
+               # ensemble.add_combination(inner_best)
 
 
                 # Calculate and save accuracy of best classifier for current feature selector
@@ -274,10 +300,11 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
                 train_acc = classifier.train(middle_train['features'][:, selected_indices], middle_train['labels'])
                 accuracy = classifier.predict(middle_val['features'][:, selected_indices], middle_val['labels'])
-
+                prediction = classifier.get_prediction(middle_val['features'])
                 middle_accuracies.append({'train_accuracy': train_acc, 'accuracy': accuracy,
                                           'model': inner_best['model'],'model_name':inner_best['model_name'],
-                                          'selector': inner_best['selector'], 'indices': selected_indices})
+                                          'selector': inner_best['selector'], 'indices': selected_indices,
+                                          'prediction':prediction})
 
                 cur_time = time.time()
                 pct_complete = (
@@ -288,19 +315,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 ))
                 del classifier, selector
 
-        ##ensemble middle loop
 
-        for middle_i in range(0,middle_fold):
-
-            middle_train,middle_val = slice_data(outer_train['features'],outer_train['labels'],middle_fold,
-                                                     middle_i)
-            print('[middle] Training Best ensemble')
-            train_acc = ensemble.train(middle_train['features'],middle_train['labels'])
-            accuracy = ensemble.predict(middle_val['features'],middle_val['labels'])
-
-            middle_accuracies.append({'train_accuracy': train_acc,'accuracy': accuracy,
-                                      'model': list(ensembles.values())[0],'model_name':list(ensembles.keys())[0],
-                                      'selector': AllSelector, 'indices': np.array(range(len(middle_train['features'][0])))})
 
 
 
