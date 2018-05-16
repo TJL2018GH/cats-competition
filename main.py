@@ -71,7 +71,6 @@ classifiers = {
     'svm_pol': SupportVectorMachinePolynomialKernelClassifier,
     'svm_rbf': SupportVectorMachineRbfKernelClassifier,
     'gba_ens': GradientBoostingAlgorithm,
-    'vot_ens': VotingEnsemble
 }
 
 # Comment any feature selectors that will not be included
