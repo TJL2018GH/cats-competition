@@ -108,3 +108,8 @@ ENV/
 cache/best.npy
 cache/inner_acc.npy
 cache/outer_acc.npy
+middle_acc.npy
+dt_classifier.dot
+profile.txt
+.entry
+cache_backup
