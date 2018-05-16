@@ -110,12 +110,7 @@ class BestEnsemble(BaseClassifier):
         :return: Prediction accuracy, as a float between 0 and 1
         """
         label_test = self.labels_to_categorical(labels)
-        for i in range(len(self.models)):
-            combination = self.models[i]['info_comb']
-            self.models[i]['prediction'] = self.models[i]['model'].get_prediction(features[:, combination['indices']])
-
-        pred_responses = self.vote(self.models)
-
+        pred_responses = self.get_prediction(features)
         accuracy = accuracy_score(label_test, pred_responses)
         return accuracy
 
@@ -126,6 +121,13 @@ class BestEnsemble(BaseClassifier):
         """
 
         pass
+
+    def get_prediction(self,features):
+        for i in range(len(self.models)):
+            combination = self.models[i]['info_comb']
+            self.models[i]['prediction'] = self.models[i]['model'].get_prediction(features[:, combination['indices']])
+
+        return self.vote(self.models)
 
     def labels_to_categorical(self, labels):
         _, IDs = unique(labels, return_inverse=True)

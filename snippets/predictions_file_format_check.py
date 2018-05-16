@@ -4,8 +4,6 @@
 # 26-03-2018
 # A script to check whether your uploaded predictions file is in the right format. It check the amount of lines, the amount of columns and the header of the file.
 
-# python3 ./predictions_file_format_check.py <C:/path/to/your/predictions.txt>
-
 # Import sys module
 import sys
 

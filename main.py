@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+import pickle
 import warnings
 
 from PIL import ImageColor
@@ -179,7 +180,7 @@ def create_final_model(model_dict, selector_constructor, features, labels, num_l
 
     print('Final train accuracy: %f.' % train_accuracy)
 
-    return model
+    return model, selected_indices
 
 
 def get_best_performing(results):
@@ -253,6 +254,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
     :return: inner_accuracies: Accuracies of the models in the inner loop
     """
 
+    global ensemble
     start_time = time.time()
     outer_fold, middle_fold, inner_fold = OUTER_FOLD, MIDDLE_FOLD, INNER_FOLD
     outer_accuracies, middle_accuracies, inner_accuracies = [], [], []
@@ -444,29 +446,34 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
     plt.title(hist_title)
     plt.savefig('results/%s.png'%hist_title)
 
+def do_final_predictions(model_data, labels):
+    sample_names = np.transpose(pd.read_csv('data/Validation_call.txt', sep='\t')).axes[0].values[4:]
+    test_call = np.transpose(pd.read_csv('data/Validation_call.txt', sep='\t', usecols=range(4, 61)).values.astype('float32'))
+    lookup, _ = np.unique(labels, return_inverse=True)
+    predictions = [lookup[label] for label in model_data['model'].get_prediction(test_call[:, model_data['indices']])]
+
+    with open('results/predictions.txt', 'w') as file:
+        file.write("'Sample'\t'Subgroup'\n")
+        for index, prediction in enumerate(predictions):
+            file.write("'%s'\t'%s'\n" % (sample_names[index], prediction))
+
 
 def main():
+    global ensemble
     print('Script execution was initiated.')
 
     # Setting the seed (for reproducibility of training results)
     np.random.seed(0)
 
+    # The order in both np.arrays is the same as in the original files, which means that the label (output) \\
+    # train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
+    train_call, train_clinical = get_data()
+    features, labels = train_call, train_clinical[:, 1]
+
+    if len(features) != len(labels):
+        sys.exit('Data and response files do not have the same amount of lines')
+
     if len(sys.argv) < 2 or sys.argv[1] != 'reuse':
-        # The order in both np.arrays is the same as in the original files, which means that the label (output) \\
-        # train_clinical[a, 1] is the wanted prediction for the data (features) in train_call[a, :]"""
-        train_call, train_clinical = get_data()
-        features, labels = train_call, train_clinical[:, 1]
-
-        if len(features) != len(labels):
-            sys.exit('Data and response files do not have the same amount of lines')
-
-        # TODO: Data pre-processing
-
-        # test if provided constants INNER_FOLD and OUTER_FOLD are allowed
-        #if not (N_SAMPLES % OUTER_FOLD == 0):
-        #    print('OUTER_FOLD constant is not appropriate.')
-        #    print('Script execution is aborted after %.8s s.' % (time.time() - START_TIME))
-        #    sys.exit()
 
         # Select model to run, based on command line parameter
         feature_length, num_unique_labels = features.shape[1], len(set(labels))
@@ -476,13 +483,22 @@ def main():
               (OUTER_FOLD, len(selectors.keys()), len(classifiers.keys())))
 
         best, outer_acc, middle_acc, inner_acc = triple_cross_validate(features, labels, num_unique_labels)
+
+        # Train one last time on entire dataset
+        model, indices = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
+        model_data = {'model': model,
+                      'indices': indices}
+
         np.save('cache/best.npy', best)
+        pickle.dump(model_data, open('cache/model_data.pkl', 'wb'))
+        pickle.dump(ensemble, open('cache/ensemble.pkl', 'wb'))
         np.save('cache/outer_acc.npy', outer_acc)
         np.save('cache/middle_acc.npy', middle_acc)
         np.save('cache/inner_acc.npy', inner_acc)
     else:
-        best, outer_acc, middle_acc, inner_acc = np.load('cache/best.npy').item(), np.load('cache/outer_acc.npy'), \
-                                     np.load('cache/middle_acc.npy'), np.load('cache/inner_acc.npy')
+        best, model_data, ensemble, outer_acc, middle_acc, inner_acc = np.load('cache/best.npy').item(), pickle.load(open('cache/model_data.pkl', 'rb')),\
+                                                        pickle.load(open('cache/ensemble.pkl', 'rb')),\
+                                                        np.load('cache/outer_acc.npy'), np.load('cache/middle_acc.npy'), np.load('cache/inner_acc.npy')
 
     plot_accuracies(inner_acc, 'Inner fold accuracies')
     plot_accuracies(middle_acc, 'Middle fold accuracies')
@@ -491,9 +507,9 @@ def main():
     print('Triple-CV was finished.')
     print('Best performing pair (%f%%): %s / %s' % (best['accuracy'], best['selector'], best['model']))
 
-    # TODO: Save model as *.pkl USING sklearn.joblib() ?
-    # Train one last time on entire dataset
-    model = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
+    # Make validation predictions
+    do_final_predictions(model_data, labels)
+
 
 
 # EXECUTION
