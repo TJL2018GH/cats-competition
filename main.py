@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+import warnings
 
 from PIL import ImageColor
 
@@ -86,8 +87,9 @@ selectors = {
 # Ensemble methods to be used
 ensemble = None # initialised in triple_cross_validate()
 
-# Fix pandas warning
+# Hide warnings
 pd.options.mode.chained_assignment = None  # default='warn'
+warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
 
 def labels_to_categorical(labels):
     _,IDs = np.unique(labels,return_inverse=True)
