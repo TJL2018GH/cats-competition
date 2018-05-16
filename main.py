@@ -21,7 +21,7 @@ import sys
 
 from PIL import ImageColor
 
-# CLASSIFIERS
+# CLASSIFIERS AND FEATURE SELECTORS
 from classifiers.dnn_classifier import DeepNeuralClassifier
 from classifiers.dt_classifier import DecisionTreeClassifier
 from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier
@@ -56,6 +56,7 @@ OUTER_FOLD = 3  # OUTER_FOLD-fold CV (outer loop) for triple-CV (Wessels, 2005: 
 MIDDLE_FOLD = 6
 INNER_FOLD = 5
 
+# Comment any classifiers that will not be included
 classifiers = {
     'dnn': DeepNeuralClassifier,
     'nm': NearestMeanClassifier,
@@ -72,6 +73,7 @@ classifiers = {
     'vot_ens': VotingEnsemble
 }
 
+# Comment any feature selectors that will not be included
 selectors = {
     'all': AllSelector,
     'rand': RandomSelector,
@@ -81,6 +83,7 @@ selectors = {
     'rfe': RFESelector
 }
 
+# Ensemble methods to be used
 ensembles = {
     'best_ens': BestEnsemble
 }
@@ -112,8 +115,15 @@ def get_data():
 
     return train_call, train_clinical
 
-def stratification(labels, n_fold, n_class):
 
+def stratification(labels, n_fold, n_class):
+    """
+    Stratified sampling
+    :param labels: List of the labels of the data to be sampled
+    :param n_fold: Amount of groups to make
+    :param n_class: Number of labels
+    :return: 
+    """
     labels = labels_to_categorical(labels)
     tot_num_samples = len(labels)
     sample_pool = pd.DataFrame({'labels': labels ,'position': range(0, tot_num_samples)})
@@ -238,7 +248,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         outer_train, outer_val = slice_data(features, labels, outer_fold, outer_i)
         middle_best = {'accuracy': 0, 'model': None, 'selector': None}
 
-
         index_stratified,count_rem2 = stratification(outer_train['labels'],middle_fold,num_labels)
         outer_train['features'] = outer_train['features'][index_stratified]
         outer_train['labels'] = outer_train['labels'][index_stratified]
@@ -246,7 +255,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
         # Middle fold, used for selecting the optimal selector
         for middle_i in range(0, middle_fold):
             for selector_i in range(0, len(selectors)):
-
 
                 middle_train, middle_val = slice_data(outer_train['features'], outer_train['labels'], middle_fold,
                                                       middle_i)
@@ -282,7 +290,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
                 ensemble.add_combination(inner_best)
 
-
                 # Calculate and save accuracy of best classifier for current feature selector
                 classifier = inner_best['model'](len(selected_indices), num_labels)
                 print('[middle] Training %s / %s' % (classifier.__class__.__name__, selector.__class__.__name__))
@@ -302,8 +309,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                 ))
                 del classifier, selector
 
-        ##ensemble middle loop
-
+        # ensemble middle loop
         for middle_i in range(0,middle_fold):
 
             middle_train,middle_val = slice_data(outer_train['features'],outer_train['labels'],middle_fold,
@@ -316,10 +322,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                                       'model': list(ensembles.values())[0],'model_name':list(ensembles.keys())[0],
                                       'selector': AllSelector, 'indices': np.array(range(len(middle_train['features'][0])))})
 
-
-
         middle_best = get_best_performing(middle_accuracies)
-
 
         # Calculate and save accuracy of best feature selector / classifier pair
         selector = middle_best['selector']()
@@ -339,7 +342,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
                   'selector': middle_best['selector'], 'indices': selected_indices})
 
         del classifier, selector
-
 
     outer_best = get_best_performing(outer_accuracies)
     print(outer_best)
@@ -366,6 +368,10 @@ def make_faded(colorcode):
 
 
 def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected features'):
+    """
+    Plots the training and testing accuracy of different model and feature selector combinations
+    :param accuracies: List of accuracies
+    """
     plt.figure()
 
     selected_indices = []
