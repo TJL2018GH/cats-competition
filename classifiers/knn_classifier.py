@@ -31,6 +31,11 @@ class KNearestNeighborsClassifier(BaseClassifier):
         return accuracy
 
     def get_prediction(self,features):
+        '''
+        this function get the prediction from the
+        :param features: sample to predict
+        :return: prediction from the model
+        '''
         return self.model.predict(features)
 
     def predict(self, features, labels):
@@ -46,5 +51,10 @@ class KNearestNeighborsClassifier(BaseClassifier):
         return accuracy
 
     def labels_to_categorical(self, labels):
+        '''
+        convert the labels from string to number
+        :param labels: labels list of string
+        :return: labels converted in number
+        '''
         _, IDs = unique(labels, return_inverse=True)
         return IDs

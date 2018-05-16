@@ -23,6 +23,11 @@ class BaseClassifier:
         pass
 
     def get_prediction(self,features):
+        '''
+        this function get the prediction from the
+        :param features: sample to predict
+        :return: prediction from the model
+        '''
         pass
 
     def reset(self):

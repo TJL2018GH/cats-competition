@@ -55,6 +55,11 @@ class DeepNeuralClassifier(BaseClassifier):
 
 
     def get_prediction(self,features):
+        '''
+        this function get the prediction from the
+        :param features: sample to predict
+        :return: prediction from the model
+        '''
         probabilities_list = self.model.predict(features)
         return [list(probabilities).index(max(list(probabilities))) for probabilities in probabilities_list]
 
@@ -67,5 +72,10 @@ class DeepNeuralClassifier(BaseClassifier):
         pass
 
     def labels_to_categorical(self,labels):
+        '''
+        convert the labels from string to number
+        :param labels: labels list of string
+        :return: labels converted in number
+        '''
         _,IDs = unique(labels,return_inverse=True)
         return to_categorical(IDs,num_classes=self.num_classes)

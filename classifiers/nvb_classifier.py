@@ -5,12 +5,16 @@ from classifiers.base_classifier import BaseClassifier
 
 class NaiveBayesClassifier(BaseClassifier):
 
-	def __init__(self,feature_length,num_classes,x=10):
-
+	def __init__(self,feature_length,num_classes):
+		'''
+		initialise the class object
+		calling the inheritance of the BaseClassifier father class
+		initialising the Gaussian NB model (nayves bayes classifier)
+		:param feature_length: max features number
+		:param num_classes: number of classes
+		'''
+		self.model = GaussianNB()
 		super().__init__(feature_length,num_classes)
-
-
-
 		self.num_classes = num_classes
 
 	def train(self,features,labels):
@@ -20,13 +24,12 @@ class NaiveBayesClassifier(BaseClassifier):
         :param labels: An M row list of labels to train to predict
         :return: Prediction accuracy, as a float between 0 and 1
         """
-		self.model = GaussianNB()
+
 		labels = self.labels_to_categorical(labels)
 		self.model.fit(features,labels)
 		accuracy = self.model.score(features,labels)
 		return accuracy
 
-	# make sure you save model using the same library as we used in machine learning price-predictor
 
 	def predict(self,features,labels):
 		"""
@@ -42,16 +45,19 @@ class NaiveBayesClassifier(BaseClassifier):
 		return accuracy
 
 	def get_prediction(self,features):
+		'''
+		this function get the prediction from the
+		:param features: sample to predict
+		:return: prediction from the model
+		'''
 		return self.model.predict(features)
 
-	def reset(self):
-		"""
-        Resets the trained weights / parameters to initial state
-        :return:
-        """
-
-		pass
 
 	def labels_to_categorical(self,labels):
+		'''
+		convert the labels from string to number
+		:param labels: labels list of string
+		:return: labels converted in number
+		'''
 		_,IDs = unique(labels,return_inverse=True)
 		return IDs
