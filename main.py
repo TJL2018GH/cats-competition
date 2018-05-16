@@ -88,6 +88,8 @@ ensembles = {
     'best_ens': BestEnsemble
 }
 
+# Fix pandas warning
+pd.options.mode.chained_assignment = None  # default='warn'
 
 def labels_to_categorical(labels):
     _,IDs = np.unique(labels,return_inverse=True)
