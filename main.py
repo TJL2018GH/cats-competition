@@ -84,9 +84,7 @@ selectors = {
 }
 
 # Ensemble methods to be used
-ensembles = {
-    'best_ens': BestEnsemble
-}
+ensemble = None # initialised in triple_cross_validate()
 
 # Fix pandas warning
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -174,11 +172,7 @@ def create_final_model(model_dict, selector_constructor, features, labels, num_l
     """
     model_constructor = model_dict['model']
     selected_indices = selector_constructor().select_features(features, labels)
-    model = model_constructor(len(selected_indices), num_labels)
-    print(model_dict['model_name'])
-    if model_dict['model_name'] == 'best_ens':
-        model.add_combinations_list(middle_accu)
-        selected_indices = model_dict['indices']
+    model = model_constructor(len(selected_indices), num_labels) if model_dict['model_name'] != 'best_ens' else ensemble
 
     train_accuracy = model.train(features[:, selected_indices], labels)
 
@@ -257,7 +251,6 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
     :return: middle_accuracies: Accuracies of the models in the middle loop
     :return: inner_accuracies: Accuracies of the models in the inner loop
     """
-    ensemble = BestEnsemble(len(features[1,:]), num_labels)
 
     start_time = time.time()
     outer_fold, middle_fold, inner_fold = OUTER_FOLD, MIDDLE_FOLD, INNER_FOLD
@@ -268,6 +261,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
     features = features[index_stratified]
     labels = labels[index_stratified]
+    ensemble = BestEnsemble(len(features[1, :]), num_labels)
 
     # Outer fold, used for accuracy validation of best selector/classifier pairs
     for outer_i in range(0, outer_fold):
@@ -346,7 +340,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
             accuracy = ensemble.predict(middle_val['features'],middle_val['labels'])
 
             middle_accuracies.append({'train_accuracy': train_acc,'accuracy': accuracy,
-                                      'model': list(ensembles.values())[0],'model_name':list(ensembles.keys())[0],
+                                      'model': BestEnsemble,'model_name': 'best_ens',
                                       'selector': AllSelector, 'indices': np.array(range(len(middle_train['features'][0])))})
 
         middle_best = get_best_performing(middle_accuracies)
@@ -485,10 +479,6 @@ def main():
         np.save('cache/outer_acc.npy', outer_acc)
         np.save('cache/middle_acc.npy', middle_acc)
         np.save('cache/inner_acc.npy', inner_acc)
-
-        # TODO: Save model as *.pkl USING sklearn.joblib() ?
-        # Train one last time on entire dataset
-        model = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
     else:
         best, outer_acc, middle_acc, inner_acc = np.load('cache/best.npy').item(), np.load('cache/outer_acc.npy'), \
                                      np.load('cache/middle_acc.npy'), np.load('cache/inner_acc.npy')
@@ -499,6 +489,10 @@ def main():
 
     print('Triple-CV was finished.')
     print('Best performing pair (%f%%): %s / %s' % (best['accuracy'], best['selector'], best['model']))
+
+    # TODO: Save model as *.pkl USING sklearn.joblib() ?
+    # Train one last time on entire dataset
+    model = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
 
 
 # EXECUTION
