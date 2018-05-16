@@ -180,17 +180,31 @@ def get_best_performing(results):
     if len(results) == 0:
         print("Warning: get_best_performance() called with empty results list")
         return None
-    result_table = pd.DataFrame(results)
 
-    summary = result_table.groupby(by='model_name')['accuracy']
-    summary = summary.std()
+    accuracies = {}
 
-    best = results[0]
+    for index, entry in enumerate(results):
+        model_name = entry['model_name']
+        selector_name = entry['selector'].__name__
+        key = model_name + selector_name
 
-    for result in results:
-        if result['accuracy'] - (result['train_accuracy'] - result['accuracy']) > \
-                        best['accuracy'] - (best['train_accuracy'] - best['accuracy']):
-            best = result
+        if not key in accuracies:
+            accuracies[key] = {
+                'model': entry['model'], 'model_name': model_name, 'selector': entry['selector'],
+                'indices': entry['indices'], 'train_accuracy': [], 'accuracy': []
+            }
+
+        accuracies[key]['accuracy'].append(entry['accuracy']);
+        accuracies[key]['train_accuracy'].append(entry['train_accuracy']);
+
+    best = {'accuracy': 0}
+
+    for entry in accuracies.values():
+        entry['accuracy'] = np.mean(entry['accuracy'])
+        entry['train_accuracy'] = np.mean(entry['train_accuracy'])
+
+        if entry['accuracy'] > best['accuracy']:
+            best = entry
 
     return best
 
@@ -363,7 +377,7 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
             model, selector, accuracy, indices = entry['model'], entry['selector'], entry[field_name], entry['indices']
             model_name = entry['model_name']
             if model_name == 'best_ens':
-                selected_indices = np.array([])
+                selected_indices = []
 
             key = '%s / %s' % (selector.__name__.replace('Selector', ''), model.__name__.replace('Classifier', ''))
             if key not in grouped:
@@ -443,7 +457,7 @@ def main():
         # Train one last time on entire dataset
         model = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
     else:
-        best, outer_acc, inner_acc = np.load('cache/best.npy').item(), \
+        best, outer_acc, middle_acc, inner_acc = np.load('cache/best.npy').item(), np.load('cache/middle_acc.npy'), \
                                      np.load('cache/outer_acc.npy'), np.load('cache/inner_acc.npy')
 
     plot_accuracies(inner_acc, 'Inner fold accuracies')
