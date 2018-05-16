@@ -122,7 +122,7 @@ def stratification(labels, n_fold, n_class):
     :param labels: List of the labels of the data to be sampled
     :param n_fold: Amount of groups to make
     :param n_class: Number of labels
-    :return: 
+    :return:
     """
     labels = labels_to_categorical(labels)
     tot_num_samples = len(labels)
