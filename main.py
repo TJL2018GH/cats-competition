@@ -329,7 +329,7 @@ def triple_cross_validate(features: list, labels: list, num_labels: int):
 
                 cur_time = time.time()
                 pct_complete = (
-                    ((outer_i+1) * MIDDLE_FOLD * len(selectors) + (middle_i+1) * len(selectors) + (selector_i+1)) /
+                    ((outer_i) * MIDDLE_FOLD * len(selectors) + (middle_i) * len(selectors) + (selector_i+1)) /
                     (OUTER_FOLD * MIDDLE_FOLD * len(selectors) + MIDDLE_FOLD * len(selectors) + len(selectors)))
                 print('======== Progress: %f%% (estimated time remaining %s) ========' % (
                     pct_complete * 100, datetime.timedelta(seconds=(cur_time-start_time)/pct_complete)
