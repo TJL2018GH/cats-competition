@@ -1,11 +1,10 @@
+# library impoted
+
 from sklearn.naive_bayes import GaussianNB
 from scipy.stats import rankdata
 import numpy as np
 from numpy import unique
 from feature_selectors.base_selector import BaseSelector
-
-
-
 
 
 class RFESelector(BaseSelector):
@@ -27,10 +26,27 @@ class RFESelector(BaseSelector):
         return index_features
 
     def labels_to_categorical(self,labels):
+        '''
+        convert the labels from string to number
+        :param labels: labels list of string
+        :return: labels converted in number
+        '''
         _,IDs = unique(labels,return_inverse=True)
         return IDs
 
     def eliminate(self,model_classifier,data,labels,n_features,class_num,step,index_records,j):
+        '''
+        eliminate a number of feature defined by step until reached the defined number of features desired
+        :param model_classifier: models sklearn
+        :param data: samples dataframe
+        :param labels: labels of the sample
+        :param n_features: tot number of features
+        :param class_num: number of class
+        :param step: number of features to remove (working with 1 step)
+        :param index_records: list with all the indices of feature
+        :param j: counter of iteration
+        :return: the indeces of the features selected
+        '''
         length= len(data[0])
         for k in range(length - 1*step):
             ranks = []

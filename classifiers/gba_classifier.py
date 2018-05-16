@@ -7,6 +7,13 @@ from sklearn.feature_selection import RFE
 class GradientBoostingAlgorithm(BaseClassifier):
 
 	def __init__(self,feature_length,num_classes,x=10):
+		'''
+		initialise the class object
+		logistic regression l2 penalty for multinomial data the solver to find the minimal error is
+		the newton-cg algorithm
+		:param feature_length: max features number
+		:param num_classes: number of classes
+		'''
 
 		super().__init__(feature_length,num_classes)
 
@@ -50,8 +57,18 @@ class GradientBoostingAlgorithm(BaseClassifier):
 		pass
 
 	def get_prediction(self,features):
+		'''
+		this function get the prediction from the
+		:param features: sample to predict
+		:return: prediction from the model
+		'''
 		return self.model.predict(features)
 
 	def labels_to_categorical(self,labels):
+		'''
+		convert the labels from string to number
+		:param labels: labels list of string
+		:return: labels converted in number
+		'''
 		_,IDs = unique(labels,return_inverse=True)
 		return IDs
