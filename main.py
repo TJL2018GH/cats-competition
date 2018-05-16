@@ -206,8 +206,8 @@ def get_best_performing(results):
                 'indices': entry['indices'], 'train_accuracy': [], 'accuracy': []
             }
 
-        accuracies[key]['accuracy'].append(entry['accuracy']);
-        accuracies[key]['train_accuracy'].append(entry['train_accuracy']);
+        accuracies[key]['accuracy'].append(entry['accuracy'])
+        accuracies[key]['train_accuracy'].append(entry['train_accuracy'])
 
     best = {'accuracy': 0}
 
@@ -446,16 +446,18 @@ def plot_accuracies(accuracies: list, title='Accuracies', hist_title='Selected f
     plt.title(hist_title)
     plt.savefig('results/%s.png'%hist_title)
 
-def do_final_predictions(model_data, labels):
-    sample_names = np.transpose(pd.read_csv('data/Validation_call.txt', sep='\t')).axes[0].values[4:]
-    test_call = np.transpose(pd.read_csv('data/Validation_call.txt', sep='\t', usecols=range(4, 61)).values.astype('float32'))
+def do_final_predictions(model_data, labels, input='data/Validation_call.txt', output='results/predictions.txt'):
+    sample_names = np.transpose(pd.read_csv(input, sep='\t')).axes[0].values[4:]
+    test_call = np.transpose(pd.read_csv(input, sep='\t', usecols=range(4, 61)).values.astype('float32'))
     lookup, _ = np.unique(labels, return_inverse=True)
     predictions = [lookup[label] for label in model_data['model'].get_prediction(test_call[:, model_data['indices']])]
 
-    with open('results/predictions.txt', 'w') as file:
+    with open(output, 'w') as file:
         file.write("'Sample'\t'Subgroup'\n")
         for index, prediction in enumerate(predictions):
             file.write("'%s'\t'%s'\n" % (sample_names[index], prediction))
+            
+    print('Wrote predictions to %s.' % output)
 
 
 def main():
