@@ -457,8 +457,8 @@ def main():
         # Train one last time on entire dataset
         model = create_final_model(best, best['selector'], features, labels, num_unique_labels, middle_acc)
     else:
-        best, outer_acc, middle_acc, inner_acc = np.load('cache/best.npy').item(), np.load('cache/middle_acc.npy'), \
-                                     np.load('cache/outer_acc.npy'), np.load('cache/inner_acc.npy')
+        best, outer_acc, middle_acc, inner_acc = np.load('cache/best.npy').item(), np.load('cache/outer_acc.npy'), \
+                                     np.load('cache/middle_acc.npy'), np.load('cache/inner_acc.npy')
 
     plot_accuracies(inner_acc, 'Inner fold accuracies')
     plot_accuracies(middle_acc, 'Middle fold accuracies')
