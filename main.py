@@ -117,13 +117,7 @@ def get_data():
 
 
 def stratification(labels, n_fold, n_class):
-    """
-    Stratified sampling
-    :param labels: List of the labels of the data to be sampled
-    :param n_fold: Amount of groups to make
-    :param n_class: Number of labels
-    :return:
-    """
+
     labels = labels_to_categorical(labels)
     tot_num_samples = len(labels)
     sample_pool = pd.DataFrame({'labels': labels ,'position': range(0, tot_num_samples)})
@@ -165,7 +159,17 @@ def stratification(labels, n_fold, n_class):
 
 
 def create_final_model(model_dict, selector_constructor, features, labels, num_labels, middle_accu):
+    """
+    Train the best performing model on the entire data set
 
+    :param: model_dict: Dictionary with the different models
+    :param: selector_constructor: Feature_selection method
+    :param: features: Vector of features of the entire data set
+    :param: labels: Labels of the entire dataset
+    :param: num_labels: Number of unique labels
+    :param: middle_accu: Accuracies of the middle fold
+    :return: model: Model trained on the entire dataset
+    """
     model_constructor = model_dict['model']
     selected_indices = selector_constructor().select_features(features, labels)
     model = model_constructor(len(selected_indices), num_labels)
@@ -220,6 +224,16 @@ def get_best_performing(results):
 
 
 def slice_data(features: list, labels: list, folds: int, current_fold: int) -> object:
+    """
+    Split data into training and validation set
+
+    :param: features: Data to be split
+    :param: labels: List of the labels corresponding to the rows of the features
+    :param: folds: Number of folds that the data will be split into
+    :param: current_fold: Current fold in the loop calling the function
+    :return: train: Training data
+    :return: val: Validation data
+    """
     val_begin = int(current_fold / folds)
     val_end = int(val_begin + len(features) / folds)
     train_indices = list(range(0, val_begin)) + list(range(val_end, len(features)))
@@ -230,6 +244,17 @@ def slice_data(features: list, labels: list, folds: int, current_fold: int) -> o
 
 
 def triple_cross_validate(features: list, labels: list, num_labels: int):
+    """
+    Perform the triple cross validation
+
+    :param: features: Data
+    :param: labels: List of the labels corresponding to the rows of the features
+    :param: num_labels: Number of unique labels
+    :return: outer_best: Accuracy of best performing model
+    :return: outer_accuracies: Accuracies of the models in the outer loop
+    :return: middle_accuracies: Accuracies of the models in the middle loop
+    :return: inner_accuracies: Accuracies of the models in the inner loop
+    """
     ensemble = BestEnsemble(len(features[1,:]), num_labels)
 
     start_time = time.time()
