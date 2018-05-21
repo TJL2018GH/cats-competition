@@ -24,6 +24,7 @@ import warnings
 from PIL import ImageColor
 
 # CLASSIFIERS AND FEATURE SELECTORS
+from ensemble.voting_ensemble import VotingEnsemble
 from classifiers.dnn_classifier import DeepNeuralClassifier
 from classifiers.dt_classifier import DecisionTreeClassifier
 from classifiers.linsvc import SupportVectorMachineLinearKernelOneVsRestClassifier
@@ -394,7 +395,8 @@ def make_faded(colorcode):
     :param colorcode: Hex RGB string (e.g. #AABBCC)
     :return: Hex RGB string (e.g. #AABBCC)
     """
-    r,g,b = ImageColor.getrgb(colorcode)
+    #r,g,b = ImageColor.getrgb(colorcode)
+
     h,l,s = colorsys.rgb_to_hls(r / 255,g / 255,b / 255)
     l = min([l * 1.5,1.0])
     s *= 0.4
